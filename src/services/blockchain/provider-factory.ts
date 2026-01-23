@@ -6,6 +6,7 @@
 
 import { IBlockchainProvider, BlockchainType } from '../../types/blockchain.js';
 import { SolanaProvider } from './solana-provider.js';
+import { EthereumProvider } from './ethereum-provider.js';
 
 /**
  * Registry of blockchain providers
@@ -36,8 +37,11 @@ export function getBlockchainProvider(
       break;
 
     case 'ethereum':
+      provider = new EthereumProvider();
+      break;
+
     case 'polygon':
-      // TODO: Implement Ethereum provider in Phase 10
+      // TODO: Implement Polygon provider
       throw new Error(`${blockchain} provider not yet implemented`);
 
     default:
@@ -54,7 +58,7 @@ export function getBlockchainProvider(
  * @returns Array of blockchain types that have providers
  */
 export function getSupportedBlockchains(): BlockchainType[] {
-  return ['solana']; // Add 'ethereum', 'polygon' when implemented
+  return ['solana', 'ethereum'];
 }
 
 /**

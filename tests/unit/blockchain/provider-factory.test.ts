@@ -11,6 +11,7 @@ import {
   clearProviderCache,
 } from '../../../src/services/blockchain/provider-factory.js';
 import { SolanaProvider } from '../../../src/services/blockchain/solana-provider.js';
+import { EthereumProvider } from '../../../src/services/blockchain/ethereum-provider.js';
 
 describe('ProviderFactory', () => {
   afterEach(() => {
@@ -33,9 +34,16 @@ describe('ProviderFactory', () => {
       expect(provider1).toBe(provider2);
     });
 
-    it('should throw error for unsupported blockchain', () => {
-      expect(() => getBlockchainProvider('ethereum')).toThrow(
-        'ethereum provider not yet implemented'
+    it('should return EthereumProvider for ethereum blockchain', () => {
+      const provider = getBlockchainProvider('ethereum');
+
+      expect(provider).toBeInstanceOf(EthereumProvider);
+      expect(provider.getBlockchainType()).toBe('ethereum');
+    });
+
+    it('should throw error for polygon (not yet implemented)', () => {
+      expect(() => getBlockchainProvider('polygon')).toThrow(
+        'polygon provider not yet implemented'
       );
     });
 
@@ -47,12 +55,13 @@ describe('ProviderFactory', () => {
   });
 
   describe('getSupportedBlockchains', () => {
-    it('should return array with solana', () => {
+    it('should return array with solana and ethereum', () => {
       const supported = getSupportedBlockchains();
 
       expect(supported).toBeInstanceOf(Array);
       expect(supported).toContain('solana');
-      expect(supported.length).toBeGreaterThan(0);
+      expect(supported).toContain('ethereum');
+      expect(supported.length).toBe(2);
     });
   });
 
@@ -61,8 +70,12 @@ describe('ProviderFactory', () => {
       expect(isBlockchainSupported('solana')).toBe(true);
     });
 
-    it('should return false for ethereum (not yet implemented)', () => {
-      expect(isBlockchainSupported('ethereum')).toBe(false);
+    it('should return true for ethereum', () => {
+      expect(isBlockchainSupported('ethereum')).toBe(true);
+    });
+
+    it('should return false for polygon (not yet implemented)', () => {
+      expect(isBlockchainSupported('polygon')).toBe(false);
     });
 
     it('should return false for invalid blockchain', () => {
