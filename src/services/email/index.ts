@@ -25,3 +25,13 @@ export {
   type SchedulerState,
   type SchedulerOptions,
 } from './cleanup-scheduler.js';
+
+export {
+  EmailSenderService,
+  emailSenderService,
+  type ComposeEmailInput,
+  type SendEmailResult,
+  type SentEmail,
+  type DeliveryStatus,
+  type RateLimitResult,
+} from './email-sender-service.js';

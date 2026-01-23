@@ -62,6 +62,9 @@ const envSchema = z.object({
   RATE_LIMIT_EMAIL_SEND_FREE_TIER: z.coerce.number().positive().default(50),
   RATE_LIMIT_EMAIL_SEND_PAID_TIER: z.coerce.number().positive().default(500),
 
+  // Subscription
+  SUBSCRIPTION_GRACE_PERIOD_DAYS: z.coerce.number().min(0).default(7),
+
   // Email Limits
   MAX_EMAIL_SIZE_MB: z.coerce.number().positive().default(25),
   MAX_ATTACHMENT_SIZE_MB: z.coerce.number().positive().default(10),

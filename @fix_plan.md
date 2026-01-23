@@ -98,23 +98,23 @@
 - [x] Write payment integration tests
 
 ### Tier Management
-- [ ] Implement tier-based feature gating
-- [ ] Update retention policy on tier upgrade
-- [ ] Build subscription status API
-- [ ] Add grace period handling
-- [ ] Create tier migration logic
-- [ ] Write tier management tests
+- [x] Implement tier-based feature gating
+- [x] Update retention policy on tier upgrade
+- [x] Build subscription status API
+- [x] Add grace period handling
+- [x] Create tier migration logic
+- [x] Write tier management tests
 
 ## Phase 5: Email Sending (Medium Priority)
 
 ### Outbound Email
-- [ ] Setup SMTP provider for outbound (SendGrid API/Postmark)
-- [ ] Implement email composition API
-- [ ] Create "From" address selector
+- [x] Setup SMTP provider for outbound (SendGrid API/Postmark)
+- [x] Implement email composition API
+- [x] Create "From" address selector
 - [ ] Build recipient verification system
-- [ ] Add email sending rate limiting
-- [ ] Implement sent email storage
-- [ ] Add delivery status tracking
+- [x] Add email sending rate limiting
+- [x] Implement sent email storage
+- [x] Add delivery status tracking
 - [ ] Write email sending tests
 
 ### SPF/DKIM/DMARC Setup
@@ -313,22 +313,27 @@
 - ✅ Multi-provider SMTP webhook support
 - ✅ Email ingestion and storage pipeline
 - ✅ Mailbox query API with pagination
+- ✅ Main Application Entry Point with all routes wired
+- ✅ Email Sender Service with rate limiting
+- ✅ Tier Service with feature gating and grace periods
+- ✅ Tier middleware for API route protection
+- ✅ Tier service tests (33 tests)
 
 ## Next Priority Tasks
 
 ### Immediate (Next Loop)
-1. **Email Sending** - Outbound SMTP functionality
+1. ✅ **Email Sending** - Outbound SMTP functionality (COMPLETED)
    - Setup SMTP provider for outbound (SendGrid/Postmark)
    - Implement email composition API
    - Add delivery status tracking
    - Create "From" address selector
 
-2. **Tier-based Feature Gating** - Restrict features by subscription
+2. ✅ **Tier-based Feature Gating** - Restrict features by subscription (COMPLETED)
    - Gate email sending to paid tier
    - Enforce rate limits by tier
    - Add tier checks to API middleware
 
-3. **Main Application Entry Point** - Wire everything together
+3. ✅ **Main Application Entry Point** - Wire everything together (COMPLETED)
    - Create Express app with all routes
    - Add CORS and security middleware
    - Setup graceful shutdown
