@@ -5,15 +5,24 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AddressLinkingService } from '../address-linking-service.js';
-import { db } from '../../../database/connection.js';
+import { db, withTransaction } from '../../../database/connection.js';
 import { tierService } from '../../tier/tier-service.js';
 import { getBlockchainProvider } from '../../blockchain/provider-factory.js';
 
-vi.mock('../../../database/connection.js', () => ({
-  db: {
+vi.mock('../../../database/connection.js', () => {
+  const mockClient = {
     query: vi.fn(),
-  },
-}));
+  };
+  return {
+    db: {
+      query: vi.fn(),
+      getClient: vi.fn().mockResolvedValue(mockClient),
+    },
+    withTransaction: vi.fn(async (callback: (client: typeof mockClient) => Promise<unknown>) => {
+      return callback(mockClient);
+    }),
+  };
+});
 
 vi.mock('../../tier/tier-service.js', () => ({
   tierService: {
@@ -25,12 +34,28 @@ vi.mock('../../blockchain/provider-factory.js', () => ({
   getBlockchainProvider: vi.fn(),
 }));
 
+const getMockClient = () => {
+  const mockWithTransaction = vi.mocked(withTransaction);
+  const mockCallback = mockWithTransaction.mock.calls[0]?.[0];
+  if (mockCallback) {
+    return (mockCallback as unknown as { mock: { calls: unknown[][] } }).mock?.calls[0]?.[0];
+  }
+  return null;
+};
+
 describe('AddressLinkingService', () => {
   let service: AddressLinkingService;
+  let mockClientQuery: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     service = new AddressLinkingService();
     vi.clearAllMocks();
+
+    mockClientQuery = vi.fn();
+    vi.mocked(withTransaction).mockImplementation(async (callback) => {
+      const mockClient = { query: mockClientQuery };
+      return callback(mockClient as never);
+    });
   });
 
   describe('linkAddress', () => {
@@ -60,12 +85,11 @@ describe('AddressLinkingService', () => {
       });
 
       // Not a primary address
-      vi.mocked(db.query)
+      mockClientQuery
         .mockResolvedValueOnce({ rows: [] })
         // Not already linked
         .mockResolvedValueOnce({ rows: [] })
-        // Address doesn't exist, create new
-        .mockResolvedValueOnce({ rows: [] })
+        // Insert blockchain_address (ON CONFLICT returns the id)
         .mockResolvedValueOnce({ rows: [{ id: 10 }] })
         // Create address_link
         .mockResolvedValueOnce({
@@ -135,7 +159,7 @@ describe('AddressLinkingService', () => {
       });
 
       // Address is already a primary address
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ id: 5 }] });
+      mockClientQuery.mockResolvedValueOnce({ rows: [{ id: 5 }] });
 
       const result = await service.linkAddress(validInput);
 
@@ -161,7 +185,7 @@ describe('AddressLinkingService', () => {
       });
 
       // Not a primary address
-      vi.mocked(db.query)
+      mockClientQuery
         .mockResolvedValueOnce({ rows: [] })
         // Already linked to another user
         .mockResolvedValueOnce({ rows: [{ user_id: 999 }] });
@@ -190,11 +214,11 @@ describe('AddressLinkingService', () => {
       });
 
       // Not a primary address
-      vi.mocked(db.query)
+      mockClientQuery
         .mockResolvedValueOnce({ rows: [] })
         // Not already linked
         .mockResolvedValueOnce({ rows: [] })
-        // Address already exists
+        // Address already exists (ON CONFLICT returns existing id)
         .mockResolvedValueOnce({ rows: [{ id: 25 }] })
         // Create address_link
         .mockResolvedValueOnce({

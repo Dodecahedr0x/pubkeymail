@@ -8,9 +8,10 @@
  * - Tier limits are enforced for address linking
  */
 
-import { db } from '../../database/connection.js';
+import { db, withTransaction } from '../../database/connection.js';
 import { tierService } from '../tier/tier-service.js';
 import { getBlockchainProvider } from '../blockchain/provider-factory.js';
+import type { PoolClient } from 'pg';
 import type { BlockchainType } from '../../types/blockchain.js';
 
 /**
@@ -80,7 +81,7 @@ export class AddressLinkingService {
     const { userId, address, blockchain, signature, message } = input;
 
     try {
-      // Check tier limit
+      // Check tier limit (outside transaction - read-only check)
       const canLink = await tierService.canLinkAddress(userId);
       if (!canLink) {
         return {
@@ -89,7 +90,7 @@ export class AddressLinkingService {
         };
       }
 
-      // Verify signature using blockchain provider
+      // Verify signature using blockchain provider (outside transaction - external call)
       const provider = getBlockchainProvider(blockchain);
       const verificationResult = await provider.verifySignature(
         message,
@@ -104,92 +105,89 @@ export class AddressLinkingService {
         };
       }
 
-      // Check if address already linked to any account (as primary or linked)
-      const existingPrimary = await db.query<{ id: number }>(
-        `SELECT u.id FROM users u
-         JOIN blockchain_addresses ba ON u.primary_address_id = ba.id
-         WHERE ba.address = $1 COLLATE "C"`,
-        [address]
-      );
+      // Perform database operations within a transaction
+      return await withTransaction(async (client: PoolClient) => {
+        // Check if address already linked to any account as primary
+        const existingPrimary = await client.query<{ id: number }>(
+          `SELECT u.id FROM users u
+           JOIN blockchain_addresses ba ON u.primary_address_id = ba.id
+           WHERE ba.address = $1 COLLATE "C"`,
+          [address]
+        );
 
-      if (existingPrimary.rows.length > 0) {
-        return {
-          success: false,
-          error: 'Address is already registered as a primary address',
-        };
-      }
+        if (existingPrimary.rows.length > 0) {
+          return {
+            success: false,
+            error: 'Address is already registered as a primary address',
+          };
+        }
 
-      const existingLink = await db.query<{ user_id: number }>(
-        `SELECT al.user_id FROM address_links al
-         JOIN blockchain_addresses ba ON al.address_id = ba.id
-         WHERE ba.address = $1 COLLATE "C"`,
-        [address]
-      );
+        // Check if address already linked to another account
+        const existingLink = await client.query<{ user_id: number }>(
+          `SELECT al.user_id FROM address_links al
+           JOIN blockchain_addresses ba ON al.address_id = ba.id
+           WHERE ba.address = $1 COLLATE "C"`,
+          [address]
+        );
 
-      if (existingLink.rows.length > 0) {
-        return {
-          success: false,
-          error: 'Address is already linked to another account',
-        };
-      }
+        if (existingLink.rows.length > 0) {
+          return {
+            success: false,
+            error: 'Address is already linked to another account',
+          };
+        }
 
-      // Create or get blockchain_address record
-      let addressId: number;
-      const existingAddress = await db.query<{ id: number }>(
-        `SELECT id FROM blockchain_addresses WHERE address = $1 COLLATE "C"`,
-        [address]
-      );
-
-      if (existingAddress.rows.length > 0) {
-        addressId = existingAddress.rows[0]!.id;
-      } else {
-        const newAddress = await db.query<{ id: number }>(
+        // Create or get blockchain_address record using ON CONFLICT
+        const addressResult = await client.query<{ id: number }>(
           `INSERT INTO blockchain_addresses (address, blockchain)
            VALUES ($1, $2)
+           ON CONFLICT (address) DO UPDATE SET address = EXCLUDED.address
            RETURNING id`,
           [address, blockchain]
         );
 
-        if (newAddress.rows.length === 0) {
+        if (addressResult.rows.length === 0) {
           return {
             success: false,
             error: 'Failed to create blockchain address record',
           };
         }
 
-        addressId = newAddress.rows[0]!.id;
-      }
+        const addressId = addressResult.rows[0]!.id;
 
-      // Create address_link record
-      const linkResult = await db.query<{
-        id: number;
-        verified_at: Date;
-      }>(
-        `INSERT INTO address_links (user_id, address_id)
-         VALUES ($1, $2)
-         RETURNING id, verified_at`,
-        [userId, addressId]
-      );
+        // Create address_link record with ON CONFLICT to handle race conditions
+        const linkResult = await client.query<{
+          id: number;
+          verified_at: Date;
+        }>(
+          `INSERT INTO address_links (user_id, address_id)
+           VALUES ($1, $2)
+           ON CONFLICT (user_id, address_id) DO NOTHING
+           RETURNING id, verified_at`,
+          [userId, addressId]
+        );
 
-      if (linkResult.rows.length === 0) {
+        if (linkResult.rows.length === 0) {
+          // ON CONFLICT triggered - link already exists
+          return {
+            success: false,
+            error: 'Address is already linked to this account',
+          };
+        }
+
+        const link = linkResult.rows[0]!;
+
         return {
-          success: false,
-          error: 'Failed to link address',
+          success: true,
+          data: {
+            id: link.id,
+            addressId,
+            address,
+            blockchain,
+            verifiedAt: link.verified_at,
+          },
         };
-      }
-
-      const link = linkResult.rows[0]!;
-
-      return {
-        success: true,
-        data: {
-          id: link.id,
-          addressId,
-          address,
-          blockchain,
-          verifiedAt: link.verified_at,
-        },
-      };
+      });
     } catch (error) {
       return {
         success: false,
