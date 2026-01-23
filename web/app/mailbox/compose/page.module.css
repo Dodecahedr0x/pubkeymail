@@ -1,0 +1,77 @@
+.compose {
+  max-width: 700px;
+}
+
+.compose h1 {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.field {
+  margin-bottom: var(--spacing-md);
+}
+
+.field label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 200px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+.error {
+  padding: var(--spacing-md);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--border-radius);
+  color: var(--color-danger);
+  margin-bottom: var(--spacing-md);
+}
+
+.upgrade,
+.success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  text-align: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+}
+
+.upgrade h2,
+.success h2 {
+  margin-bottom: var(--spacing-md);
+}
+
+.upgrade p,
+.success p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.successIcon {
+  font-size: 4rem;
+  margin-bottom: var(--spacing-md);
+}

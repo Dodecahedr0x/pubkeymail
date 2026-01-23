@@ -225,60 +225,60 @@
 ## Phase 11: Web Application & UI (Medium Priority)
 
 ### Framework Setup
-- [ ] Choose frontend framework (Next.js/SvelteKit/Remix recommended)
-- [ ] Setup project structure with TypeScript
-- [ ] Configure build tooling and dev server
-- [ ] Setup CSS framework (Tailwind CSS recommended)
-- [ ] Configure API client for backend communication
-- [ ] Setup state management (if needed)
+- [x] Choose frontend framework (Next.js/SvelteKit/Remix recommended)
+- [x] Setup project structure with TypeScript
+- [x] Configure build tooling and dev server
+- [x] Setup CSS framework (vanilla CSS with CSS variables)
+- [x] Configure API client for backend communication
+- [x] Setup state management (React Context)
 
 ### Authentication UI
-- [ ] Create wallet connection component (Solana wallet adapter)
-- [ ] Implement wallet selection modal
-- [ ] Build signature request flow
-- [ ] Create session management (JWT storage)
-- [ ] Implement logout functionality
-- [ ] Add wallet address display component
+- [x] Create wallet connection component (Solana wallet adapter)
+- [x] Implement wallet selection modal
+- [x] Build signature request flow
+- [x] Create session management (JWT storage)
+- [x] Implement logout functionality
+- [x] Add wallet address display component
 
 ### Mailbox UI
-- [ ] Create mailbox layout (sidebar + content)
-- [ ] Build email list component with pagination
-- [ ] Implement email detail view
-- [ ] Add loading states and skeletons
-- [ ] Create empty state for new mailboxes
+- [x] Create mailbox layout (sidebar + content)
+- [x] Build email list component with pagination
+- [x] Implement email detail view
+- [x] Add loading states and skeletons
+- [x] Create empty state for new mailboxes
 - [ ] Implement email deletion with confirmation
 - [ ] Add pull-to-refresh / auto-refresh
 
 ### Email Composition (Paid Tier)
-- [ ] Create email compose modal/page
-- [ ] Implement "From" address selector
-- [ ] Build recipient input with validation
+- [x] Create email compose modal/page
+- [x] Implement "From" address selector
+- [x] Build recipient input with validation
 - [ ] Create rich text editor for email body
 - [ ] Add attachment upload support
-- [ ] Implement send functionality
-- [ ] Create sent emails view
+- [x] Implement send functionality
+- [x] Create sent emails view
 
 ### Settings & Account
-- [ ] Create settings page layout
-- [ ] Build subscription status display
-- [ ] Implement upgrade/payment flow UI
+- [x] Create settings page layout
+- [x] Build subscription status display
+- [x] Implement upgrade/payment flow UI
 - [ ] Create forwarding rules management
 - [ ] Build multi-address linking UI
 - [ ] Add address verification flow
 
 ### Responsive Design
-- [ ] Mobile-first responsive layout
+- [x] Mobile-first responsive layout
 - [ ] Touch-friendly interactions
 - [ ] Mobile navigation (hamburger menu)
-- [ ] Optimize for tablet viewports
+- [x] Optimize for tablet viewports
 
 ### Accessibility & UX
 - [ ] Keyboard navigation support
 - [ ] Screen reader compatibility (ARIA)
 - [ ] Focus management
-- [ ] Loading and error states
+- [x] Loading and error states
 - [ ] Toast notifications
-- [ ] Dark mode support (optional)
+- [x] Dark mode support (built-in dark theme)
 
 ## Completed
 - [x] Project initialization
@@ -320,6 +320,12 @@
 - ✅ Tier service tests (33 tests)
 - ✅ Email sender service tests (13 tests)
 - ✅ Recipient verification service with internal/external handling
+- ✅ Next.js 14 web app with Solana wallet authentication
+- ✅ API client for all backend endpoints (auth, users, emails, payments)
+- ✅ Landing page with wallet connect button
+- ✅ Mailbox UI with inbox, sent emails, email detail views
+- ✅ Email compose page (paid tier gated)
+- ✅ Settings and upgrade pages with Stripe checkout
 
 ## Next Priority Tasks
 
