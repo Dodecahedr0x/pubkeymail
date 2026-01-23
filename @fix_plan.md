@@ -128,28 +128,28 @@
 ## Phase 6: Advanced Features (Medium Priority)
 
 ### Email Forwarding
-- [ ] Create forwarding rules API
-- [ ] Implement rule storage and retrieval
-- [ ] Build forwarding execution service
-- [ ] Add filter conditions support (optional)
-- [ ] Implement forwarding status tracking
-- [ ] Add forwarding error handling
-- [ ] Write forwarding tests
+- [x] Create forwarding rules API
+- [x] Implement rule storage and retrieval
+- [x] Build forwarding execution service
+- [x] Add filter conditions support (optional)
+- [x] Implement forwarding status tracking
+- [x] Add forwarding error handling
+- [x] Write forwarding tests
 
 ### Multi-Address Linking
-- [ ] Create address linking API
-- [ ] Implement secondary address verification
-- [ ] Build unified mailbox view
-- [ ] Add address unlinking functionality
-- [ ] Create linked address management UI
-- [ ] Write address linking tests
+- [x] Create address linking API
+- [x] Implement secondary address verification
+- [x] Build unified mailbox view
+- [x] Add address unlinking functionality
+- [ ] Create linked address management UI (web app)
+- [x] Write address linking tests
 
 ### Mailbox Merging
-- [ ] Implement merged mailbox query logic
-- [ ] Create mailbox grouping API
-- [ ] Build address selection for merged view
+- [x] Implement merged mailbox query logic
+- [x] Create mailbox grouping API
+- [x] Build address selection for merged view
 - [ ] Add filtering by source address
-- [ ] Write mailbox merging tests
+- [x] Write mailbox merging tests
 
 ## Phase 7: Security & Compliance (Medium Priority)
 
