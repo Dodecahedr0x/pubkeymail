@@ -31,7 +31,7 @@ interface Props {
 }
 
 export function AuthProvider({ children }: Props) {
-  const { publicKey, signMessage, connected, disconnect } = useWallet();
+  const { publicKey, signMessage, disconnect } = useWallet();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
