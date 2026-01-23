@@ -89,22 +89,22 @@ const envSchema = z.object({
     .default('info'),
   LOG_PRETTY_PRINT: z
     .string()
-    .transform((v) => v === 'true')
-    .default('true'),
+    .default('true')
+    .transform((v) => v === 'true'),
 
   // Security
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   ALLOWED_HOSTS: z.string().default('localhost'),
   HELMET_CSP_ENABLED: z
     .string()
-    .transform((v) => v === 'true')
-    .default('true'),
+    .default('true')
+    .transform((v) => v === 'true'),
 
   // Monitoring
   ENABLE_METRICS: z
     .string()
-    .transform((v) => v === 'true')
-    .default('false'),
+    .default('false')
+    .transform((v) => v === 'true'),
   METRICS_PORT: z.coerce.number().positive().default(9090),
   SENTRY_DSN: z.string().optional(),
   SENTRY_ENVIRONMENT: z.string().optional(),
@@ -112,30 +112,30 @@ const envSchema = z.object({
   // Feature Flags
   ENABLE_EMAIL_ENCRYPTION: z
     .string()
-    .transform((v) => v === 'true')
-    .default('true'),
+    .default('true')
+    .transform((v) => v === 'true'),
   ENABLE_FORWARDING_FILTERS: z
     .string()
-    .transform((v) => v === 'true')
-    .default('true'),
+    .default('true')
+    .transform((v) => v === 'true'),
   ENABLE_SPAM_FILTERING: z
     .string()
-    .transform((v) => v === 'true')
-    .default('false'),
+    .default('false')
+    .transform((v) => v === 'true'),
 
   // Development
   ENABLE_DEBUG_ROUTES: z
     .string()
-    .transform((v) => v === 'true')
-    .default('false'),
+    .default('false')
+    .transform((v) => v === 'true'),
   MOCK_SMTP_PROVIDER: z
     .string()
-    .transform((v) => v === 'true')
-    .default('false'),
+    .default('false')
+    .transform((v) => v === 'true'),
   MOCK_BLOCKCHAIN_PROVIDER: z
     .string()
-    .transform((v) => v === 'true')
-    .default('false'),
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 /**
@@ -147,7 +147,7 @@ const parseConfig = (): z.infer<typeof envSchema> => {
     return envSchema.parse(process.env);
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors.map((e) => `${e.path.join('.')}: ${e.message}`);
+      const missingVars = error.issues.map((e) => `${e.path.join('.')}: ${e.message}`);
       throw new Error(
         `Configuration validation failed:\n${missingVars.join('\n')}`
       );

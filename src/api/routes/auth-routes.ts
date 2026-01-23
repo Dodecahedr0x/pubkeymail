@@ -60,7 +60,7 @@ router.post('/challenge', async (req: Request, res: Response) => {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid request parameters',
-          details: parseResult.error.errors,
+          details: parseResult.error.issues,
         },
       });
       return;
@@ -136,7 +136,7 @@ router.post('/verify', async (req: Request, res: Response) => {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid request parameters',
-          details: parseResult.error.errors,
+          details: parseResult.error.issues,
         },
       });
       return;

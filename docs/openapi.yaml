@@ -1,0 +1,1526 @@
+openapi: 3.1.0
+info:
+  title: PubKeyMail API
+  version: 1.0.0
+  description: >-
+    Blockchain-based email service with wallet authentication.
+
+
+    ## Authentication
+
+    PubKeyMail uses wallet-based authentication. Users sign a challenge message 
+
+    with their blockchain wallet and receive a JWT token for subsequent
+    requests.
+
+
+    ## Case Sensitivity
+
+    **CRITICAL**: All blockchain addresses are case-sensitive. Different casing 
+
+    represents different addresses.
+  contact:
+    name: PubKeyMail Support
+  license:
+    name: MIT
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.pubkeymail.com
+    description: Production server
+tags:
+  - name: Auth
+    description: Wallet-based authentication endpoints
+  - name: Users
+    description: User registration and profile management
+  - name: Emails
+    description: Email sending and management
+  - name: Payments
+    description: Subscription payment endpoints
+  - name: Webhooks
+    description: Inbound email webhook handlers
+  - name: Health
+    description: Health check and monitoring endpoints
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from /auth/verify endpoint
+  schemas:
+    BlockchainType:
+      type: string
+      enum:
+        - solana
+        - ethereum
+        - polygon
+      default: solana
+      description: Supported blockchain type
+    SubscriptionPlan:
+      type: string
+      enum:
+        - monthly
+        - yearly
+      description: Subscription plan type
+    SubscriptionTier:
+      type: string
+      enum:
+        - free
+        - paid
+      description: User subscription tier
+    SubscriptionStatus:
+      type: string
+      enum:
+        - inactive
+        - active
+        - cancelled
+        - expired
+      description: Subscription status
+    DeliveryStatus:
+      type: string
+      enum:
+        - pending
+        - sent
+        - delivered
+        - failed
+        - bounced
+      description: Email delivery status
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: Invalid request parameters
+            details:
+              type: array
+              items: {}
+          required:
+            - code
+            - message
+      required:
+        - error
+    ChallengeRequest:
+      type: object
+      properties:
+        address:
+          type: string
+          minLength: 1
+          example: GNa9E2dWP8e2fg23pRJoiCvJm5cbzomm94YzotpcRh7A
+          description: Blockchain wallet address
+        blockchain:
+          type: string
+          enum:
+            - solana
+            - ethereum
+            - polygon
+          default: solana
+      required:
+        - address
+    ChallengeResponse:
+      type: object
+      properties:
+        challenge:
+          type: string
+          example: "Sign this message to authenticate with PubKeyMail: abc123..."
+          description: Message to sign with wallet
+        nonce:
+          type: string
+          example: abc123def456
+          description: Unique nonce for this challenge
+        expiresAt:
+          type: string
+          format: date-time
+          example: 2024-01-01T12:05:00Z
+      required:
+        - challenge
+        - nonce
+        - expiresAt
+    VerifyRequest:
+      type: object
+      properties:
+        address:
+          type: string
+          minLength: 1
+          example: GNa9E2dWP8e2fg23pRJoiCvJm5cbzomm94YzotpcRh7A
+        blockchain:
+          type: string
+          enum:
+            - solana
+            - ethereum
+            - polygon
+          default: solana
+        signature:
+          type: string
+          minLength: 1
+          example: 3xJ9fK...
+          description: Base58 or Base64 encoded signature
+        nonce:
+          type: string
+          minLength: 1
+          example: abc123def456
+      required:
+        - address
+        - signature
+        - nonce
+    VerifyResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT token for authenticated requests
+        expiresIn:
+          type: number
+          example: 86400
+          description: Token validity in seconds
+        user:
+          type: object
+          properties:
+            address:
+              type: string
+            blockchain:
+              type: string
+              enum:
+                - solana
+                - ethereum
+                - polygon
+          required:
+            - address
+            - blockchain
+      required:
+        - token
+        - expiresIn
+        - user
+    RegisterRequest:
+      type: object
+      properties:
+        address:
+          type: string
+          minLength: 1
+          example: GNa9E2dWP8e2fg23pRJoiCvJm5cbzomm94YzotpcRh7A
+        blockchain:
+          type: string
+          enum:
+            - solana
+            - ethereum
+            - polygon
+          default: solana
+      required:
+        - address
+    LinkedAddress:
+      type: object
+      properties:
+        id:
+          type: number
+        address:
+          type: string
+        blockchain:
+          type: string
+          enum:
+            - solana
+            - ethereum
+            - polygon
+        verifiedAt:
+          type: string
+          format: date-time
+      required:
+        - address
+        - blockchain
+    User:
+      type: object
+      properties:
+        id:
+          type: number
+          example: 1
+        primaryAddress:
+          type: string
+          example: GNa9E2dWP8e2fg23pRJoiCvJm5cbzomm94YzotpcRh7A
+        blockchain:
+          type: string
+          enum:
+            - solana
+            - ethereum
+            - polygon
+        subscriptionStatus:
+          type: string
+          enum:
+            - inactive
+            - active
+            - cancelled
+            - expired
+        subscriptionTier:
+          type: string
+          enum:
+            - free
+            - paid
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - primaryAddress
+        - blockchain
+        - subscriptionStatus
+        - subscriptionTier
+        - createdAt
+    UserWithAddresses:
+      allOf:
+        - $ref: "#/components/schemas/User"
+        - type: object
+          properties:
+            linkedAddresses:
+              type: array
+              items:
+                $ref: "#/components/schemas/LinkedAddress"
+          required:
+            - linkedAddresses
+    LinkAddressRequest:
+      type: object
+      properties:
+        address:
+          type: string
+          minLength: 1
+        blockchain:
+          type: string
+          enum:
+            - solana
+            - ethereum
+            - polygon
+          default: solana
+      required:
+        - address
+    SendEmailRequest:
+      type: object
+      properties:
+        userId:
+          type: number
+          exclusiveMinimum: 0
+        fromAddressId:
+          type: number
+          exclusiveMinimum: 0
+        toAddress:
+          type: string
+          format: email
+          example: recipient@example.com
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 998
+        bodyText:
+          type: string
+        bodyHtml:
+          type: string
+        replyTo:
+          type: string
+          format: email
+      required:
+        - userId
+        - fromAddressId
+        - toAddress
+        - subject
+    SendEmailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        messageId:
+          type: string
+        emailId:
+          type: string
+          format: uuid
+        details:
+          type: object
+          properties:
+            provider:
+              type: string
+            deliveryStatus:
+              type: string
+              enum:
+                - pending
+                - sent
+                - delivered
+                - failed
+                - bounced
+            sentAt:
+              type: string
+              format: date-time
+          required:
+            - provider
+            - deliveryStatus
+            - sentAt
+      required:
+        - success
+        - emailId
+    SentEmail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        from:
+          type: string
+        to:
+          type: string
+        subject:
+          type: string
+        sentAt:
+          type: string
+          format: date-time
+        deliveryStatus:
+          type: string
+          enum:
+            - pending
+            - sent
+            - delivered
+            - failed
+            - bounced
+      required:
+        - id
+        - from
+        - to
+        - subject
+        - sentAt
+        - deliveryStatus
+    SentEmailDetail:
+      allOf:
+        - $ref: "#/components/schemas/SentEmail"
+        - type: object
+          properties:
+            bodyText:
+              type: string
+            bodyHtml:
+              type: string
+            messageId:
+              type: string
+    FromAddress:
+      type: object
+      properties:
+        id:
+          type: number
+        address:
+          type: string
+        email:
+          type: string
+          format: email
+        blockchain:
+          type: string
+          enum:
+            - solana
+            - ethereum
+            - polygon
+      required:
+        - id
+        - address
+        - email
+        - blockchain
+    GetSentEmailsQuery:
+      type: object
+      properties:
+        userId:
+          type: number
+          exclusiveMinimum: 0
+        limit:
+          type: number
+          minimum: 1
+          maximum: 100
+          default: 50
+        offset:
+          type:
+            - number
+            - "null"
+          minimum: 0
+          default: 0
+      required:
+        - userId
+    PlanPricing:
+      type: object
+      properties:
+        usd:
+          type: object
+          properties:
+            amount:
+              type: number
+              example: 999
+              description: Amount in cents
+            currency:
+              type: string
+              example: usd
+            formatted:
+              type: string
+              example: $9.99
+          required:
+            - amount
+            - currency
+            - formatted
+        usdc:
+          type: object
+          properties:
+            amount:
+              type: number
+              example: 9.99
+            currency:
+              type: string
+              example: usdc
+            formatted:
+              type: string
+              example: 9.99 USDC
+          required:
+            - amount
+            - currency
+            - formatted
+      required:
+        - usd
+        - usdc
+    PricingResponse:
+      type: object
+      properties:
+        monthly:
+          $ref: "#/components/schemas/PlanPricing"
+        yearly:
+          $ref: "#/components/schemas/PlanPricing"
+        savings:
+          type: object
+          properties:
+            yearly:
+              type: string
+              example: 2 months free
+            percentage:
+              type: number
+              example: 17
+          required:
+            - yearly
+            - percentage
+      required:
+        - monthly
+        - yearly
+        - savings
+    StripeCheckoutRequest:
+      type: object
+      properties:
+        userId:
+          type: number
+          exclusiveMinimum: 0
+        plan:
+          type: string
+          enum:
+            - monthly
+            - yearly
+        successUrl:
+          type: string
+          format: uri
+        cancelUrl:
+          type: string
+          format: uri
+      required:
+        - userId
+        - plan
+        - successUrl
+        - cancelUrl
+    StripeCheckoutResponse:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          example: cs_test_...
+        checkoutUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+        - sessionId
+        - checkoutUrl
+        - expiresAt
+    SolanaPayRequest:
+      type: object
+      properties:
+        userId:
+          type: number
+          exclusiveMinimum: 0
+        plan:
+          type: string
+          enum:
+            - monthly
+            - yearly
+      required:
+        - userId
+        - plan
+    SolanaPayResponse:
+      type: object
+      properties:
+        reference:
+          type: string
+        recipient:
+          type: string
+        amount:
+          type: number
+        splToken:
+          type: string
+        label:
+          type: string
+        message:
+          type: string
+        memo:
+          type: string
+      required:
+        - reference
+        - recipient
+        - amount
+        - splToken
+        - label
+        - message
+        - memo
+    SolanaPayVerifyRequest:
+      type: object
+      properties:
+        reference:
+          type: string
+        signature:
+          type: string
+      required:
+        - reference
+        - signature
+    CancelSubscriptionRequest:
+      type: object
+      properties:
+        userId:
+          type: number
+          exclusiveMinimum: 0
+      required:
+        - userId
+    ComponentHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - unhealthy
+        latency:
+          type: number
+          description: Latency in milliseconds
+        message:
+          type: string
+      required:
+        - status
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: number
+          description: Uptime in seconds
+        version:
+          type: string
+      required:
+        - status
+        - timestamp
+        - uptime
+        - version
+    ReadinessStatus:
+      allOf:
+        - $ref: "#/components/schemas/HealthStatus"
+        - type: object
+          properties:
+            checks:
+              type: object
+              properties:
+                database:
+                  $ref: "#/components/schemas/ComponentHealth"
+                redis:
+                  $ref: "#/components/schemas/ComponentHealth"
+                cleanupScheduler:
+                  $ref: "#/components/schemas/ComponentHealth"
+              required:
+                - database
+                - redis
+                - cleanupScheduler
+          required:
+            - checks
+  parameters: {}
+paths:
+  /api/v1/auth/challenge:
+    post:
+      tags:
+        - Auth
+      summary: Request authentication challenge
+      description: Request a challenge message to sign with your wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChallengeRequest"
+      responses:
+        "200":
+          description: Challenge generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChallengeResponse"
+        "400":
+          description: Validation error or unsupported blockchain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/auth/verify:
+    post:
+      tags:
+        - Auth
+      summary: Verify wallet signature
+      description: Verify a signed challenge and receive a JWT token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyRequest"
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/users/register:
+    post:
+      tags:
+        - Users
+      summary: Register new user
+      description: Register a new user with a wallet address
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/User"
+                required:
+                  - user
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/users/check/{address}:
+    get:
+      tags:
+        - Users
+      summary: Check if address is registered
+      parameters:
+        - schema:
+            type: string
+            description: Blockchain wallet address
+          required: true
+          description: Blockchain wallet address
+          name: address
+          in: path
+      responses:
+        "200":
+          description: Registration status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  registered:
+                    type: boolean
+                required:
+                  - registered
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/users/profile/{address}:
+    get:
+      tags:
+        - Users
+      summary: Get user profile by address
+      parameters:
+        - schema:
+            type: string
+            description: Blockchain wallet address
+          required: true
+          description: Blockchain wallet address
+          name: address
+          in: path
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: "#/components/schemas/UserWithAddresses"
+                required:
+                  - user
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/users/{userId}/link-address:
+    post:
+      tags:
+        - Users
+      summary: Link additional address to user
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type:
+              - number
+              - "null"
+            description: User ID
+          required: false
+          description: User ID
+          name: userId
+          in: path
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LinkAddressRequest"
+      responses:
+        "201":
+          description: Address linked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  linkedAddress:
+                    $ref: "#/components/schemas/LinkedAddress"
+                required:
+                  - linkedAddress
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Address already linked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/users/{userId}/addresses/{addressId}:
+    delete:
+      tags:
+        - Users
+      summary: Unlink address from user
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type:
+              - number
+              - "null"
+            description: User ID
+          required: false
+          description: User ID
+          name: userId
+          in: path
+        - schema:
+            type:
+              - number
+              - "null"
+            description: Address ID
+          required: false
+          description: Address ID
+          name: addressId
+          in: path
+      responses:
+        "200":
+          description: Address unlinked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Address unlinked successfully
+                required:
+                  - message
+        "400":
+          description: Cannot unlink primary address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Address not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/emails/send:
+    post:
+      tags:
+        - Emails
+      summary: Send an email
+      description: Send an email (requires paid subscription)
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailRequest"
+      responses:
+        "200":
+          description: Email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendEmailResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Subscription required or no permission
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: User or address not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/emails/sent:
+    get:
+      tags:
+        - Emails
+      summary: Get sent emails
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type: number
+            exclusiveMinimum: 0
+          required: true
+          name: userId
+          in: query
+        - schema:
+            type: number
+            minimum: 1
+            maximum: 100
+            default: 50
+          required: false
+          name: limit
+          in: query
+        - schema:
+            type:
+              - number
+              - "null"
+            minimum: 0
+            default: 0
+          required: false
+          name: offset
+          in: query
+      responses:
+        "200":
+          description: List of sent emails
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  emails:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SentEmail"
+                  total:
+                    type: number
+                  limit:
+                    type: number
+                  offset:
+                    type: number
+                required:
+                  - emails
+                  - total
+                  - limit
+                  - offset
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/emails/from-addresses:
+    get:
+      tags:
+        - Emails
+      summary: Get available from addresses
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type: number
+            exclusiveMinimum: 0
+          required: true
+          name: userId
+          in: query
+      responses:
+        "200":
+          description: List of from addresses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  addresses:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FromAddress"
+                required:
+                  - addresses
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/emails/{emailId}:
+    get:
+      tags:
+        - Emails
+      summary: Get sent email by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          required: true
+          name: emailId
+          in: path
+        - schema:
+            type: number
+            exclusiveMinimum: 0
+          required: true
+          name: userId
+          in: query
+      responses:
+        "200":
+          description: Email details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    $ref: "#/components/schemas/SentEmailDetail"
+                required:
+                  - email
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Email not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/payments/pricing:
+    get:
+      tags:
+        - Payments
+      summary: Get subscription pricing
+      responses:
+        "200":
+          description: Pricing information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PricingResponse"
+  /api/v1/payments/providers:
+    get:
+      tags:
+        - Payments
+      summary: Get available payment providers
+      responses:
+        "200":
+          description: Available payment providers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  providers:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - stripe
+                      - solana_pay
+                  stripe:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                    required:
+                      - available
+                  solana_pay:
+                    type: object
+                    properties:
+                      available:
+                        type: boolean
+                    required:
+                      - available
+                required:
+                  - providers
+                  - stripe
+                  - solana_pay
+  /api/v1/payments/stripe/checkout:
+    post:
+      tags:
+        - Payments
+      summary: Create Stripe checkout session
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StripeCheckoutRequest"
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripeCheckoutResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "501":
+          description: Stripe not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/payments/solana-pay/request:
+    post:
+      tags:
+        - Payments
+      summary: Create Solana Pay request
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SolanaPayRequest"
+      responses:
+        "200":
+          description: Payment request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SolanaPayResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "501":
+          description: Solana Pay not configured
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/payments/solana-pay/verify:
+    post:
+      tags:
+        - Payments
+      summary: Verify Solana Pay transaction
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SolanaPayVerifyRequest"
+      responses:
+        "200":
+          description: Payment verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  verified:
+                    type: boolean
+                  paymentId:
+                    type: string
+                required:
+                  - verified
+        "400":
+          description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/payments/webhooks/stripe:
+    post:
+      tags:
+        - Payments
+      summary: Stripe webhook handler
+      parameters:
+        - schema:
+            type: string
+          required: true
+          name: stripe-signature
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+              additionalProperties: {}
+      responses:
+        "200":
+          description: Webhook received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received:
+                    type: boolean
+                required:
+                  - received
+        "400":
+          description: Invalid signature or webhook error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/payments/cancel:
+    post:
+      tags:
+        - Payments
+      summary: Cancel subscription
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelSubscriptionRequest"
+      responses:
+        "200":
+          description: Subscription cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Subscription cancelled successfully
+                required:
+                  - message
+        "400":
+          description: Cancellation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/webhooks/inbound:
+    post:
+      tags:
+        - Webhooks
+      summary: Receive inbound email
+      description: Webhook endpoint for SMTP providers to deliver inbound emails
+      parameters:
+        - schema:
+            type: string
+          required: false
+          name: x-webhook-signature
+          in: header
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+              additionalProperties: {}
+              description: Provider-specific payload
+      responses:
+        "200":
+          description: Email received
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  emailId:
+                    type: string
+                    format: uuid
+                required:
+                  - success
+                  - emailId
+        "400":
+          description: Invalid email data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Invalid webhook signature
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/webhooks/test:
+    get:
+      tags:
+        - Webhooks
+      summary: Test webhook endpoint
+      description: Verify webhook endpoint is accessible (development only)
+      responses:
+        "200":
+          description: Webhook accessible
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  provider:
+                    type: string
+                  webhookPath:
+                    type: string
+                required:
+                  - message
+                  - provider
+                  - webhookPath
+        "404":
+          description: Not available in production
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Basic health check
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /health/ready:
+    get:
+      tags:
+        - Health
+      summary: Readiness check
+      description: Check if all dependencies are available
+      responses:
+        "200":
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
+        "503":
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessStatus"
+  /health/live:
+    get:
+      tags:
+        - Health
+      summary: Liveness probe
+      description: Kubernetes-style liveness probe
+      responses:
+        "200":
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                required:
+                  - status
+webhooks: {}

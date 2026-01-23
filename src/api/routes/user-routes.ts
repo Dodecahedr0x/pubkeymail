@@ -67,7 +67,7 @@ router.post('/register', async (req: Request, res: Response) => {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid request body',
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
       });
       return;
@@ -262,7 +262,7 @@ router.post('/:userId/link-address', async (req: Request, res: Response) => {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid request body',
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
       });
       return;
