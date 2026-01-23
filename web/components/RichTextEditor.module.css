@@ -1,17 +1,25 @@
 .container {
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  background: var(--bg-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-lg);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
   overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.container:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-glow);
 }
 
 .menuBar {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-xs);
-  padding: var(--spacing-sm);
-  background: var(--bg-tertiary);
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid var(--glass-border);
 }
 
 .menuGroup {
@@ -23,37 +31,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 32px;
-  height: 32px;
+  min-width: 34px;
+  height: 34px;
   padding: 0 var(--spacing-sm);
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--border-radius);
   color: var(--text-secondary);
   font-size: 0.875rem;
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: all var(--transition-fast);
 }
 
 .menuButton:hover:not(:disabled) {
-  background: var(--bg-secondary);
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border);
   color: var(--text-primary);
 }
 
 .menuButton:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
 .menuButton.active {
-  background: var(--color-primary);
+  background: var(--gradient-primary);
+  border-color: transparent;
   color: white;
+  box-shadow: var(--shadow-glow-sm);
 }
 
 .divider {
   width: 1px;
-  background: var(--border-color);
-  margin: 0 var(--spacing-xs);
+  background: var(--glass-border);
+  margin: 0 var(--spacing-sm);
 }
 
 .editorContent {
@@ -63,11 +74,11 @@
 }
 
 .editor {
-  padding: var(--spacing-md);
+  padding: var(--spacing-lg);
   min-height: 200px;
   color: var(--text-primary);
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.7;
   outline: none;
 }
 
@@ -82,8 +93,9 @@
 .editor h1,
 .editor h2,
 .editor h3 {
-  margin: 1em 0 0.5em 0;
+  margin: 1.25em 0 0.5em 0;
   color: var(--text-primary);
+  font-weight: 600;
 }
 
 .editor h1:first-child,
@@ -107,7 +119,7 @@
 .editor ul,
 .editor ol {
   padding-left: 1.5em;
-  margin: 0.5em 0;
+  margin: 0.75em 0;
 }
 
 .editor li {
@@ -116,26 +128,31 @@
 
 .editor blockquote {
   border-left: 3px solid var(--color-primary);
-  margin: 0.75em 0;
-  padding-left: 1em;
+  margin: 1em 0;
+  padding-left: 1.25em;
   color: var(--text-secondary);
   font-style: italic;
+  background: rgba(99, 102, 241, 0.05);
+  padding: var(--spacing-md);
+  padding-left: 1.25em;
+  border-radius: 0 var(--border-radius) var(--border-radius) 0;
 }
 
 .editor code {
-  background: var(--bg-tertiary);
+  background: rgba(99, 102, 241, 0.15);
   border-radius: 4px;
-  padding: 0.2em 0.4em;
-  font-family: 'Monaco', 'Menlo', monospace;
+  padding: 0.2em 0.5em;
+  font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace;
   font-size: 0.875em;
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
 }
 
 .editor pre {
-  background: var(--bg-tertiary);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--glass-border);
   border-radius: var(--border-radius);
   padding: var(--spacing-md);
-  margin: 0.75em 0;
+  margin: 1em 0;
   overflow-x: auto;
 }
 
@@ -147,14 +164,22 @@
 
 .editor hr {
   border: none;
-  border-top: 1px solid var(--border-color);
-  margin: 1em 0;
+  border-top: 1px solid var(--glass-border);
+  margin: 1.5em 0;
 }
 
 .link {
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   text-decoration: underline;
+  text-decoration-color: rgba(99, 102, 241, 0.4);
+  text-underline-offset: 2px;
   cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.link:hover {
+  color: var(--text-primary);
+  text-decoration-color: var(--text-primary);
 }
 
 .editor p.is-editor-empty:first-child::before {
@@ -168,16 +193,20 @@
 @media (max-width: 600px) {
   .menuBar {
     gap: 2px;
-    padding: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
 
   .menuButton {
-    min-width: 28px;
-    height: 28px;
+    min-width: 30px;
+    height: 30px;
     font-size: 0.75rem;
   }
 
   .divider {
     display: none;
+  }
+  
+  .editor {
+    padding: var(--spacing-md);
   }
 }

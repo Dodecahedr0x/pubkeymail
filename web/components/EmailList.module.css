@@ -1,31 +1,51 @@
 .list {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-xl);
   overflow: hidden;
 }
 
 .header {
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--glass-border);
   color: var(--text-secondary);
   font-size: 0.875rem;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .emailItem {
   display: grid;
   grid-template-columns: 180px 1fr 80px;
   gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--glass-border);
   text-decoration: none;
   color: var(--text-primary);
-  transition: background var(--transition-fast);
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.emailItem::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--gradient-primary);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
 }
 
 .emailItem:hover {
-  background: var(--bg-tertiary);
+  background: var(--glass-bg-hover);
   text-decoration: none;
+}
+
+.emailItem:hover::before {
+  opacity: 1;
 }
 
 .emailItem:last-child {
@@ -33,11 +53,29 @@
 }
 
 .emailItem.unread {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.emailItem.unread::after {
+  content: '';
+  position: absolute;
+  left: var(--spacing-lg);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background: var(--gradient-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--color-primary-glow);
 }
 
 .emailItem.unread .subject {
   font-weight: 600;
+  color: var(--text-primary);
+}
+
+.emailItem.unread .sender {
+  padding-left: var(--spacing-lg);
 }
 
 .sender {
@@ -46,17 +84,24 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color var(--transition-fast);
+}
+
+.emailItem:hover .sender {
+  color: var(--text-primary);
 }
 
 .content {
   display: flex;
   gap: var(--spacing-sm);
   overflow: hidden;
+  align-items: baseline;
 }
 
 .subject {
   color: var(--text-primary);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .preview {
@@ -64,12 +109,14 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 0.9rem;
 }
 
 .date {
   font-size: 0.75rem;
   color: var(--text-muted);
   text-align: right;
+  white-space: nowrap;
 }
 
 .loading,
@@ -78,19 +125,36 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 40px;
+  padding: 100px 40px;
   text-align: center;
   color: var(--text-secondary);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-xl);
 }
 
 .emptyIcon {
-  font-size: 4rem;
-  margin-bottom: var(--spacing-md);
+  font-size: 5rem;
+  margin-bottom: var(--spacing-lg);
+  filter: grayscale(0.5) opacity(0.7);
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 .empty h3 {
   color: var(--text-primary);
   margin-bottom: var(--spacing-sm);
+  font-size: 1.25rem;
+}
+
+.empty p {
+  max-width: 300px;
+  line-height: 1.6;
 }
 
 .loadMore {
@@ -98,13 +162,27 @@
   padding: var(--spacing-md);
   background: transparent;
   border: none;
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   font-weight: 500;
   cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.loadMore::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
 }
 
 .loadMore:hover:not(:disabled) {
-  background: var(--bg-tertiary);
+  background: var(--glass-bg-hover);
+  color: var(--text-primary);
 }
 
 .loadMore:disabled {
@@ -115,6 +193,15 @@
   .emailItem {
     grid-template-columns: 1fr auto;
     grid-template-rows: auto auto;
+    padding: var(--spacing-md);
+  }
+  
+  .emailItem.unread::after {
+    left: var(--spacing-md);
+  }
+  
+  .emailItem.unread .sender {
+    padding-left: var(--spacing-md);
   }
   
   .sender {
@@ -130,5 +217,6 @@
   .content {
     grid-column: 1 / -1;
     grid-row: 2;
+    margin-top: var(--spacing-xs);
   }
 }

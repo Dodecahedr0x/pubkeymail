@@ -1,10 +1,27 @@
 /**
  * Authentication Service Tests
  * Tests for wallet-based authentication with challenge-response
+ * Uses real cryptographic signing for end-to-end verification
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { Keypair } from '@solana/web3.js';
+import nacl from 'tweetnacl';
+import bs58 from 'bs58';
 import { AuthService } from '../../../src/services/auth/auth-service.js';
+
+function createTestKeypair() {
+  const keypair = Keypair.generate();
+  return {
+    publicKey: keypair.publicKey.toBase58(),
+    secretKey: keypair.secretKey,
+    sign: (message: string): string => {
+      const messageBytes = new TextEncoder().encode(message);
+      const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
+      return bs58.encode(signatureBytes);
+    },
+  };
+}
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -158,8 +175,106 @@ describe('AuthService', () => {
       expect(result.error).toBeDefined();
     });
 
-    // Note: Testing successful authentication requires valid signature
-    // This should be tested in integration tests with real wallet signing
+    it('should successfully authenticate with valid signature', async () => {
+      const testWallet = createTestKeypair();
+      const blockchain = 'solana';
+
+      const challenge = await authService.generateChallenge(
+        testWallet.publicKey,
+        blockchain
+      );
+
+      const signature = testWallet.sign(challenge.challenge);
+
+      const result = await authService.verifyAndAuthenticate(
+        testWallet.publicKey,
+        blockchain,
+        signature,
+        challenge.nonce
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.token).toBeDefined();
+      expect(result.expiresIn).toBeGreaterThan(0);
+      expect(result.address).toBe(testWallet.publicKey);
+      expect(result.blockchain).toBe(blockchain);
+    });
+
+    it('should reject invalid signature for valid challenge', async () => {
+      const testWallet = createTestKeypair();
+      const wrongWallet = createTestKeypair();
+      const blockchain = 'solana';
+
+      const challenge = await authService.generateChallenge(
+        testWallet.publicKey,
+        blockchain
+      );
+
+      const wrongSignature = wrongWallet.sign(challenge.challenge);
+
+      const result = await authService.verifyAndAuthenticate(
+        testWallet.publicKey,
+        blockchain,
+        wrongSignature,
+        challenge.nonce
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Signature verification failed');
+    });
+
+    it('should reject tampered challenge message', async () => {
+      const testWallet = createTestKeypair();
+      const blockchain = 'solana';
+
+      const challenge = await authService.generateChallenge(
+        testWallet.publicKey,
+        blockchain
+      );
+
+      const tamperedMessage = challenge.challenge.replace('PubKeyMail', 'FakeApp');
+      const signature = testWallet.sign(tamperedMessage);
+
+      const result = await authService.verifyAndAuthenticate(
+        testWallet.publicKey,
+        blockchain,
+        signature,
+        challenge.nonce
+      );
+
+      expect(result.success).toBe(false);
+    });
+
+    it('should prevent nonce reuse after successful auth', async () => {
+      const testWallet = createTestKeypair();
+      const blockchain = 'solana';
+
+      const challenge = await authService.generateChallenge(
+        testWallet.publicKey,
+        blockchain
+      );
+
+      const signature = testWallet.sign(challenge.challenge);
+
+      const result1 = await authService.verifyAndAuthenticate(
+        testWallet.publicKey,
+        blockchain,
+        signature,
+        challenge.nonce
+      );
+
+      expect(result1.success).toBe(true);
+
+      const result2 = await authService.verifyAndAuthenticate(
+        testWallet.publicKey,
+        blockchain,
+        signature,
+        challenge.nonce
+      );
+
+      expect(result2.success).toBe(false);
+      expect(result2.error).toContain('already been used');
+    });
   });
 
   describe('verifyJWT', () => {
@@ -178,16 +293,39 @@ describe('AuthService', () => {
     });
 
     it('should return null for expired token', () => {
-      // Create an expired token (would need to mock time or use old token)
-      // This is better tested with integration tests
       const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjB9.test';
       const result = authService.verifyJWT(expiredToken);
 
       expect(result).toBeNull();
     });
 
-    // Note: Testing valid JWT verification requires generating a real token
-    // This is tested implicitly through the authentication flow
+    it('should verify a valid JWT from successful authentication', async () => {
+      const testWallet = createTestKeypair();
+      const blockchain = 'solana';
+
+      const challenge = await authService.generateChallenge(
+        testWallet.publicKey,
+        blockchain
+      );
+
+      const signature = testWallet.sign(challenge.challenge);
+
+      const authResult = await authService.verifyAndAuthenticate(
+        testWallet.publicKey,
+        blockchain,
+        signature,
+        challenge.nonce
+      );
+
+      expect(authResult.success).toBe(true);
+      expect(authResult.token).toBeDefined();
+
+      const payload = authService.verifyJWT(authResult.token!);
+
+      expect(payload).not.toBeNull();
+      expect(payload?.address).toBe(testWallet.publicKey);
+      expect(payload?.blockchain).toBe(blockchain);
+    });
   });
 
   describe('cleanupExpiredNonces', () => {

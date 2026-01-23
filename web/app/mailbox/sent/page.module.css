@@ -6,33 +6,46 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .header h1 {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .list {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-xl);
   overflow: hidden;
 }
 
 .listHeader {
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--glass-border);
   color: var(--text-secondary);
   font-size: 0.875rem;
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .emailItem {
   display: grid;
   grid-template-columns: 180px 1fr 120px;
   gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--glass-border);
+  transition: all var(--transition-fast);
+}
+
+.emailItem:hover {
+  background: var(--glass-bg-hover);
 }
 
 .emailItem:last-child {
@@ -45,6 +58,11 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color var(--transition-fast);
+}
+
+.emailItem:hover .to {
+  color: var(--text-primary);
 }
 
 .content {
@@ -76,26 +94,38 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 80px 40px;
+  padding: 100px 40px;
   text-align: center;
   color: var(--text-secondary);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius-lg);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-xl);
 }
 
 .emptyIcon {
-  font-size: 4rem;
-  margin-bottom: var(--spacing-md);
+  font-size: 5rem;
+  margin-bottom: var(--spacing-lg);
+  filter: grayscale(0.5) opacity(0.7);
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }
 
 .empty h3 {
   color: var(--text-primary);
   margin-bottom: var(--spacing-sm);
+  font-size: 1.25rem;
 }
 
 .empty p {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  max-width: 300px;
+  line-height: 1.6;
 }
 
 .loadMore {
@@ -103,28 +133,48 @@
   padding: var(--spacing-md);
   background: transparent;
   border: none;
-  color: var(--color-primary);
+  color: var(--color-primary-hover);
   font-weight: 500;
   cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.loadMore::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
 }
 
 .loadMore:hover:not(:disabled) {
-  background: var(--bg-tertiary);
+  background: var(--glass-bg-hover);
+  color: var(--text-primary);
+}
+
+.loadMore:disabled {
+  color: var(--text-muted);
 }
 
 .error {
-  padding: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
   background: rgba(239, 68, 68, 0.1);
-  border: 1px solid var(--color-danger);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: var(--border-radius);
-  color: var(--color-danger);
-  margin-bottom: var(--spacing-md);
+  color: #f87171;
+  margin-bottom: var(--spacing-lg);
 }
 
 @media (max-width: 600px) {
   .emailItem {
     grid-template-columns: 1fr auto;
     grid-template-rows: auto auto;
+    padding: var(--spacing-md);
   }
   
   .to {
@@ -138,5 +188,6 @@
   
   .content {
     grid-column: 1;
+    margin-top: var(--spacing-xs);
   }
 }

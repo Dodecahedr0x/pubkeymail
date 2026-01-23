@@ -5,8 +5,9 @@
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "dev:local": "USE_LOCAL_DEV=true DOMAIN=localhost JWT_SECRET=local-dev-secret-key-min-32-chars SMTP_API_KEY=mock SMTP_WEBHOOK_SECRET=mock SMTP_FROM_DOMAIN=localhost SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com tsx watch src/index.ts",
+    "dev": "pnpm run dev:local & pnpm run dev:web",
+    "dev:api": "tsx watch src/index.ts",
+    "dev:local": "USE_LOCAL_DEV=true DOMAIN=localhost JWT_SECRET=local-dev-secret-key-min-32-chars SMTP_API_KEY=mock SMTP_WEBHOOK_SECRET=mock SMTP_FROM_DOMAIN=localhost SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com CORS_ORIGIN=http://localhost:3001 tsx watch src/index.ts",
     "dev:web": "pnpm --filter web dev",
     "build": "tsc",
     "build:dev": "tsc --sourceMap",

@@ -10,7 +10,7 @@
 
 import { Connection, PublicKey } from '@solana/web3.js';
 import { getHashedName, getNameAccountKey, NameRegistryState } from '@solana/spl-name-service';
-import * as nacl from 'tweetnacl';
+import nacl from 'tweetnacl';
 import bs58 from 'bs58';
 import {
   IBlockchainProvider,

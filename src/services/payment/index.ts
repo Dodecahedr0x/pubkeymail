@@ -10,6 +10,5 @@ export {
   type PaymentStatus,
   type PaymentIntent,
   type PaymentResult,
-  type StripeCheckoutData,
   type SolanaPayRequest,
 } from './payment-service.js';

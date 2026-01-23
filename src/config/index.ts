@@ -84,18 +84,11 @@ const envSchema = z.object({
   MAX_ATTACHMENT_SIZE_MB: z.coerce.number().positive().default(10),
   MAX_ATTACHMENTS_PER_EMAIL: z.coerce.number().positive().default(10),
 
-  // Payments - Stripe
-  STRIPE_SECRET_KEY: z.string().optional(),
-  STRIPE_PUBLISHABLE_KEY: z.string().optional(),
-  STRIPE_WEBHOOK_SECRET: z.string().optional(),
-  STRIPE_PRICE_ID_MONTHLY: z.string().optional(),
-  STRIPE_PRICE_ID_YEARLY: z.string().optional(),
-
-  // Payments - Solana Pay
+  // Payments - Solana Pay (USDC only)
   SOLANA_PAY_MERCHANT_WALLET: z.string().optional(),
-  SOLANA_PAY_USDC_MINT: z.string().optional(),
-  SOLANA_PAY_MONTHLY_PRICE_USDC: z.coerce.number().positive().optional(),
-  SOLANA_PAY_YEARLY_PRICE_USDC: z.coerce.number().positive().optional(),
+  SOLANA_PAY_USDC_MINT: z
+    .string()
+    .default('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'), // Mainnet USDC
 
   // Logging
   LOG_LEVEL: z

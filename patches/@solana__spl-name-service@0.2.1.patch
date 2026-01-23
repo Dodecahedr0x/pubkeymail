@@ -1,0 +1,20 @@
+diff --git a/package.json b/package.json
+index f28afcd48b5f9b5bb802cfe6c81159c006a1a7e4..b10888cf393bb77f028e57d02441070436463f67 100644
+--- a/package.json
++++ b/package.json
+@@ -24,11 +24,11 @@
+   ],
+   "main": "lib/cjs/index.js",
+   "module": "lib/esm/index.js",
+-  "types": "lib/types/index.d.ts",
++  "types": "./lib/types/index.d.ts",
+   "exports": {
+-    "types": "lib/types/index.d.ts",
+-    "require": "lib/cjs/index.js",
+-    "import": "lib/esm/index.js"
++    "types": "./lib/types/index.d.ts",
++    "require": "./lib/cjs/index.js",
++    "import": "./lib/esm/index.js"
+   },
+   "scripts": {
+     "build": "tsc --build --verbose tsconfig.all.json",

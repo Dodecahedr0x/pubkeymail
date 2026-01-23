@@ -6,7 +6,8 @@
 .content {
   flex: 1;
   margin-left: var(--sidebar-width);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  position: relative;
 }
 
 .loading {
@@ -15,13 +16,20 @@
   align-items: center;
   justify-content: center;
   height: 100vh;
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
   color: var(--text-secondary);
+}
+
+.loading .spinner {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
 }
 
 @media (max-width: 768px) {
   .content {
     margin-left: 0;
     margin-top: 60px;
+    padding: var(--spacing-md);
   }
 }

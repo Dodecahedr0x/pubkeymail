@@ -4,13 +4,29 @@
  *
  * These tests validate:
  * - Address validation and case sensitivity
- * - Signature verification (Ed25519)
+ * - Signature verification (Ed25519) with real cryptographic operations
  * - SNS resolution
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { Keypair } from '@solana/web3.js';
+import nacl from 'tweetnacl';
+import bs58 from 'bs58';
 import { SolanaProvider } from '../../../src/services/blockchain/solana-provider.js';
 import { SignatureVerificationError } from '../../../src/types/blockchain.js';
+
+function createTestKeypair() {
+  const keypair = Keypair.generate();
+  return {
+    publicKey: keypair.publicKey.toBase58(),
+    secretKey: keypair.secretKey,
+    sign: (message: string): string => {
+      const messageBytes = new TextEncoder().encode(message);
+      const signatureBytes = nacl.sign.detached(messageBytes, keypair.secretKey);
+      return bs58.encode(signatureBytes);
+    },
+  };
+}
 
 describe('SolanaProvider', () => {
   let provider: SolanaProvider;
@@ -122,8 +138,74 @@ describe('SolanaProvider', () => {
       expect(result.error).toBeDefined();
     });
 
-    // Note: Testing valid signature verification requires a real keypair
-    // which should be done in integration tests with test fixtures
+    it('should verify a valid signature with real keypair', async () => {
+      const testWallet = createTestKeypair();
+      const message = 'Sign this message to authenticate with PubKeyMail';
+      const signature = testWallet.sign(message);
+
+      const result = await provider.verifySignature(
+        message,
+        signature,
+        testWallet.publicKey
+      );
+
+      expect(result.valid).toBe(true);
+      expect(result.address).toBe(testWallet.publicKey);
+      expect(result.error).toBeUndefined();
+    });
+
+    it('should reject signature from wrong keypair', async () => {
+      const wallet1 = createTestKeypair();
+      const wallet2 = createTestKeypair();
+      const message = 'test message';
+      const signature = wallet1.sign(message);
+
+      const result = await provider.verifySignature(
+        message,
+        signature,
+        wallet2.publicKey
+      );
+
+      expect(result.valid).toBe(false);
+      expect(result.error).toBeDefined();
+    });
+
+    it('should reject signature for different message', async () => {
+      const testWallet = createTestKeypair();
+      const originalMessage = 'original message';
+      const tamperedMessage = 'tampered message';
+      const signature = testWallet.sign(originalMessage);
+
+      const result = await provider.verifySignature(
+        tamperedMessage,
+        signature,
+        testWallet.publicKey
+      );
+
+      expect(result.valid).toBe(false);
+    });
+
+    it('should handle challenge message format correctly', async () => {
+      const testWallet = createTestKeypair();
+      const nonce = 'abc123def456';
+      const challenge = `Sign this message to authenticate with PubKeyMail:
+
+Address: ${testWallet.publicKey}
+Nonce: ${nonce}
+Timestamp: ${Date.now()}
+
+This signature will not trigger any blockchain transaction or cost gas.`;
+
+      const signature = testWallet.sign(challenge);
+
+      const result = await provider.verifySignature(
+        challenge,
+        signature,
+        testWallet.publicKey
+      );
+
+      expect(result.valid).toBe(true);
+    });
   });
 
   describe('resolveNameService', () => {
