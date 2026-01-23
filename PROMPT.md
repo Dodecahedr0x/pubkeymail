@@ -12,9 +12,10 @@ See [@fix_plan.md](./@fix_plan.md) for the detailed task list and progress.
 - ✅ Phase 1: Foundation & Core Infrastructure
 - ✅ Phase 2: Blockchain Integration (Solana, SNS)
 - ✅ Phase 3: Email Ingestion & Storage (including cleanup service)
+- ✅ Phase 4 (partial): User Registration & Profile Management
 
 ### In Progress
-- 🚧 Database Migrations System
+- 🚧 Phase 4: Payment Integration (Stripe, Solana Pay)
 
 ### Next Up
 - Phase 4: User Management & Payments

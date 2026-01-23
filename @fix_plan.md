@@ -18,7 +18,7 @@
 - [x] Create sent_emails table
 - [x] Create forwarding_rules table
 - [x] Create name_resolutions cache table
-- [ ] Setup database migrations system
+- [x] Setup database migrations system (node-pg-migrate)
 
 ### Configuration Management
 - [x] Define environment variables schema
@@ -80,12 +80,12 @@
 ## Phase 4: User Management & Payments (High Priority)
 
 ### User Registration
-- [ ] Create user registration flow
-- [ ] Implement wallet-based signup
-- [ ] Build subscription tier management
-- [ ] Add user profile storage
-- [ ] Create user status tracking (free/paid)
-- [ ] Write user management tests
+- [x] Create user registration flow
+- [x] Implement wallet-based signup
+- [x] Build subscription tier management
+- [x] Add user profile storage
+- [x] Create user status tracking (free/paid)
+- [x] Write user management tests
 
 ### Payment Integration
 - [ ] Setup Stripe integration for fiat payments
@@ -290,6 +290,12 @@
 - [x] Redis-backed nonce storage for authentication
 
 ## Recent Completions
+- ✅ Database migrations system with node-pg-migrate
+- ✅ User registration service with wallet-based signup
+- ✅ Subscription tier management (free/paid)
+- ✅ Multi-address linking with verification
+- ✅ User API routes (register, profile, link/unlink)
+- ✅ Comprehensive user service tests (14 tests)
 - ✅ Email Cleanup Service with scheduled cron jobs (node-cron)
 - ✅ Granular cleanup logic with batch processing and safety thresholds
 - ✅ Cleanup scheduler with health checks and manual trigger support
@@ -306,27 +312,25 @@
 ## Next Priority Tasks
 
 ### Immediate (Next Loop)
-1. **Email Cleanup Service** - Implement scheduled cleanup for expired emails
-   - Create cron job or scheduled task
-   - Granular email deletion (not bulk mailbox deletion)
-   - Safety checks and monitoring
-   - This is critical for the 30-day retention policy
+1. **Payment Integration** - Stripe and Solana Pay
+   - Setup Stripe integration for fiat payments
+   - Implement Stripe webhook handling
+   - Create Solana Pay integration
+   - Build payment verification service
 
-2. **Database Migrations System** - Setup migration framework
-   - Use node-pg-migrate or Knex.js
-   - Create initial migration from init.sql
-   - Document migration workflow
+2. **Health Check Endpoints** - For monitoring and deployment
+   - Add /health and /ready endpoints
+   - Include database and Redis connectivity checks
 
-3. **User Registration Flow** - Start Phase 4
-   - Wallet-based signup API
-   - User profile creation
-   - Subscription tier initialization
+3. **Email Sending** - Outbound SMTP functionality
+   - Setup SMTP provider for outbound
+   - Implement email composition API
+   - Add delivery status tracking
 
 ### Soon
-4. **Payment Integration** - Stripe and Solana Pay
-5. **Email Sending** - Outbound SMTP functionality
-6. **Health Check Endpoints** - For monitoring and deployment
-7. **Web App Setup** - Frontend framework, wallet connection UI
+4. **Web App Setup** - Frontend framework, wallet connection UI
+5. **Tier-based feature gating** - Restrict features by subscription
+6. **SPF/DKIM/DMARC Setup** - Email deliverability
 
 ## Notes
 - **Case Sensitivity**: Critical throughout - addresses are case-sensitive
