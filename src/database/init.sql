@@ -201,9 +201,31 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
 CREATE TRIGGER update_forwarding_rules_updated_at BEFORE UPDATE ON forwarding_rules
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- User encryption keys table (for end-to-end encryption)
+-- NOTE: Only PUBLIC keys are stored here. Private keys are NEVER stored server-side.
+CREATE TABLE IF NOT EXISTS user_encryption_keys (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    public_key VARCHAR(128) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    
+    CONSTRAINT user_encryption_keys_user_unique UNIQUE (user_id)
+);
+
+CREATE INDEX idx_user_encryption_keys_user ON user_encryption_keys(user_id);
+CREATE INDEX idx_user_encryption_keys_active ON user_encryption_keys(is_active) WHERE is_active = TRUE;
+
+-- Trigger for user_encryption_keys table
+CREATE TRIGGER update_user_encryption_keys_updated_at 
+    BEFORE UPDATE ON user_encryption_keys
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Comments for documentation
 COMMENT ON TABLE blockchain_addresses IS 'Stores blockchain addresses with case-sensitive collation. CRITICAL for security.';
 COMMENT ON COLUMN blockchain_addresses.address IS 'Case-sensitive blockchain address (base58 for Solana, hex for Ethereum)';
 COMMENT ON TABLE emails IS 'Stores received emails. expires_at is NULL for registered users (infinite retention)';
 COMMENT ON COLUMN emails.expires_at IS 'Expiration date for unregistered users. NULL = keep indefinitely (paid users)';
 COMMENT ON TABLE name_resolutions IS 'Caches name service resolutions (SNS, ENS) with TTL';
+COMMENT ON TABLE user_encryption_keys IS 'Optional encryption public keys for end-to-end encrypted emails';
