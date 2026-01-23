@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/providers';
+import { useAuth, useToast } from '@/providers';
 import * as emailsApi from '@/lib/api/emails';
+import { RichTextEditor } from '@/components/RichTextEditor';
 import styles from './page.module.css';
 
 interface FromAddress {
@@ -16,12 +17,14 @@ interface FromAddress {
 export default function ComposePage() {
   const { user } = useAuth();
   const router = useRouter();
+  const { showToast } = useToast();
   
   const [fromAddresses, setFromAddresses] = useState<FromAddress[]>([]);
   const [selectedFromId, setSelectedFromId] = useState<number | null>(null);
   const [toAddress, setToAddress] = useState('');
   const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
+  const [bodyHtml, setBodyHtml] = useState('');
+  const [bodyText, setBodyText] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -69,7 +72,8 @@ export default function ComposePage() {
         fromAddressId: selectedFromId,
         toAddress: toAddress.trim(),
         subject: subject.trim(),
-        bodyText: body,
+        bodyText: bodyText,
+        bodyHtml: bodyHtml,
       });
       
       if (result.error) {
@@ -77,11 +81,14 @@ export default function ComposePage() {
       }
       
       setSuccess(true);
+      showToast('Email sent successfully!', 'success');
       setTimeout(() => {
         router.push('/mailbox/sent');
       }, 2000);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send email');
+      const message = err instanceof Error ? err.message : 'Failed to send email';
+      setError(message);
+      showToast(message, 'error');
     } finally {
       setSending(false);
     }
@@ -167,14 +174,14 @@ export default function ComposePage() {
         </div>
         
         <div className={styles.field}>
-          <label htmlFor="body">Message</label>
-          <textarea
-            id="body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className={`input ${styles.textarea}`}
+          <label>Message</label>
+          <RichTextEditor
+            value={bodyHtml}
+            onChange={(html, text) => {
+              setBodyHtml(html);
+              setBodyText(text);
+            }}
             placeholder="Write your message..."
-            rows={12}
           />
         </div>
         

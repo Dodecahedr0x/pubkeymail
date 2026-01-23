@@ -253,7 +253,7 @@
 - [x] Create email compose modal/page
 - [x] Implement "From" address selector
 - [x] Build recipient input with validation
-- [ ] Create rich text editor for email body
+- [x] Create rich text editor for email body
 - [ ] Add attachment upload support
 - [x] Implement send functionality
 - [x] Create sent emails view

@@ -49,6 +49,10 @@ const envSchema = z.object({
   SNS_PROGRAM_ID: z.string().default('namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX'),
   SNS_CACHE_TTL: z.coerce.number().positive().default(3600),
 
+  // Blockchain - Ethereum
+  ETHEREUM_RPC_ENDPOINT: z.string().url().optional(),
+  ENS_CACHE_TTL: z.coerce.number().positive().default(3600),
+
   // Authentication
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRATION: z.coerce.number().positive().default(86400),
@@ -178,6 +182,11 @@ export const solanaConfig = {
   cluster: config.SOLANA_CLUSTER,
   snsProgramId: config.SNS_PROGRAM_ID,
   snsCacheTTL: config.SNS_CACHE_TTL,
+};
+
+export const ethereumConfig = {
+  rpcEndpoint: config.ETHEREUM_RPC_ENDPOINT || 'https://eth.llamarpc.com',
+  ensCacheTTL: config.ENS_CACHE_TTL,
 };
 
 export const authConfig = {
