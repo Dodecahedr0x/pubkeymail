@@ -27,6 +27,7 @@ import {
   EmailStats,
 } from '../../types/email.js';
 import { BlockchainType } from '../../types/blockchain.js';
+import { forwardingExecutor } from './forwarding-executor.js';
 
 /**
  * Parse email address to extract address and domain
@@ -155,7 +156,26 @@ export class EmailStorageService {
     );
 
     // Store email with resolved address
-    return await createEmail(data, address, blockchain);
+    const email = await createEmail(data, address, blockchain);
+
+    // Trigger forwarding asynchronously (don't block email storage)
+    forwardingExecutor
+      .processIncomingEmail({
+        recipientAddressId: email.addressId,
+        from: data.from,
+        subject: data.subject || '',
+        bodyText: data.bodyText,
+        bodyHtml: data.bodyHtml,
+      })
+      .catch((error) => {
+        console.error('[EmailStorageService] Failed to process forwarding rules:', {
+          emailId: email.id,
+          addressId: email.addressId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
+
+    return email;
   }
 
   /**
