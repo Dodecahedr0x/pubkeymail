@@ -18,6 +18,7 @@ import healthRoutes from './api/routes/health-routes.js';
 import emailRoutes from './api/routes/email-routes.js';
 import forwardingRoutes from './api/routes/forwarding-routes.js';
 import complianceRoutes from './api/routes/compliance-routes.js';
+import encryptionRoutes from './api/routes/encryption-routes.js';
 
 /**
  * Create and configure Express application
@@ -84,6 +85,7 @@ function createApp(): Application {
   app.use(`${apiPrefix}/emails`, emailRoutes);
   app.use(`${apiPrefix}/forwarding`, forwardingRoutes);
   app.use(`${apiPrefix}/compliance`, complianceRoutes);
+  app.use(`${apiPrefix}/encryption`, encryptionRoutes);
 
   // Health routes at root level (no API prefix for k8s probes)
   app.use('/health', healthRoutes);
@@ -110,6 +112,7 @@ function createApp(): Application {
         emails: `${apiPrefix}/emails`,
         forwarding: `${apiPrefix}/forwarding`,
         compliance: `${apiPrefix}/compliance`,
+        encryption: `${apiPrefix}/encryption`,
         health: '/health',
       },
     });
