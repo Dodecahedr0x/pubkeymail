@@ -42,3 +42,14 @@ export {
   type RecipientVerificationResult,
   type MultipleRecipientVerificationResult,
 } from './recipient-verification.js';
+
+export {
+  ForwardingService,
+  forwardingService,
+  type ForwardingRule,
+  type FilterConditions,
+  type CreateRuleInput,
+  type UpdateRuleInput,
+  type ForwardingRuleResult,
+  type EmailForFiltering,
+} from './forwarding-service.js';
