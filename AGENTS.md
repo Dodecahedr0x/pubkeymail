@@ -1,49 +1,217 @@
-# Agent Build Instructions
+# Agent Build Instructions - PubKeyMail
 
-## Project Setup
+## Project Overview
+PubKeyMail is a blockchain-based email service with wallet authentication. The tech stack will be chosen in Phase 1, but these instructions will be updated accordingly.
+
+## Prerequisites
+- Docker and Docker Compose (for PostgreSQL, Redis)
+- Node.js 18+ (if using TypeScript/Node.js stack) OR Rust 1.70+ (if using Rust stack)
+- Solana CLI tools (for blockchain integration)
+- Git for version control
+
+## Initial Setup (To be completed in Phase 1)
 ```bash
-# Install dependencies (example for Node.js project)
+# Clone the repository (if applicable)
+git clone <repo-url>
+cd pubkeymail
+
+# Setup environment variables
+cp .env.example .env
+# Edit .env with your configuration
+
+# Start infrastructure (PostgreSQL, Redis)
+docker-compose up -d
+
+# Install dependencies
+# For Node.js/TypeScript:
 npm install
-
-# Or for Python project
-pip install -r requirements.txt
-
-# Or for Rust project  
+# For Rust:
 cargo build
+
+# Run database migrations
+# (Migration commands to be added in Phase 1)
 ```
 
 ## Running Tests
 ```bash
-# Node.js
+# Run all tests
+# For Node.js/TypeScript:
 npm test
 
-# Python
-pytest
-
-# Rust
+# For Rust:
 cargo test
+
+# Run with coverage (REQUIRED before marking features complete)
+# For Node.js/TypeScript:
+npm run test:coverage
+
+# For Rust:
+cargo tarpaulin --out Html
+
+# Minimum coverage requirement: 85%
 ```
 
 ## Build Commands
 ```bash
+# Development build
+# For Node.js/TypeScript:
+npm run build:dev
+
+# For Rust:
+cargo build
+
 # Production build
+# For Node.js/TypeScript:
 npm run build
-# or
+
+# For Rust:
 cargo build --release
 ```
 
 ## Development Server
 ```bash
-# Start development server
+# Start development server with hot reload
+# For Node.js/TypeScript:
 npm run dev
-# or
-cargo run
+
+# For Rust:
+cargo watch -x run
+
+# Access API at: http://localhost:3000 (or configured port)
+```
+
+## Database Management
+```bash
+# Run migrations
+npm run migrate  # or cargo run --bin migrate
+
+# Rollback migration
+npm run migrate:rollback
+
+# Reset database (WARNING: deletes all data)
+npm run db:reset
+
+# Seed test data
+npm run db:seed
+```
+
+## Docker Commands
+```bash
+# Start all services (PostgreSQL, Redis, API)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Reset everything (including volumes)
+docker-compose down -v
+```
+
+## Code Quality
+```bash
+# Linting
+# For Node.js/TypeScript:
+npm run lint
+npm run lint:fix
+
+# For Rust:
+cargo clippy
+
+# Formatting
+# For Node.js/TypeScript:
+npm run format
+
+# For Rust:
+cargo fmt
+
+# Type checking (TypeScript only)
+npm run type-check
 ```
 
 ## Key Learnings
-- Update this section when you learn new build optimizations
-- Document any gotchas or special setup requirements
-- Keep track of the fastest test/build cycle
+### Critical Implementation Notes
+- **Case Sensitivity**: PostgreSQL database MUST use case-sensitive collation for address columns
+  - Use `COLLATE "C"` or `COLLATE "POSIX"` in table definitions
+  - Test case sensitivity thoroughly in all queries
+- **Wallet Authentication**: Never store private keys, only verify signatures
+  - Use Solana's `nacl.sign.detached.verify()` or equivalent
+  - Generate unique nonces for each authentication challenge
+- **Email Retention**: Cleanup job must be granular
+  - Query pattern: `WHERE received_at < cutoff AND address NOT IN (registered_addresses)`
+  - Never delete entire mailboxes if they contain recent emails
+- **SNS Resolution**: Cache aggressively but with TTL
+  - Default TTL: 1 hour for name resolutions
+  - Store both name and resolved address in database
+
+### Performance Optimizations
+- Index all foreign keys and frequently queried columns
+- Use pagination for all list endpoints (default: 50 items)
+- Implement connection pooling (pg-pool or r2d2)
+- Cache name service resolutions in Redis
+
+### Common Gotchas
+- Solana addresses are base58 encoded, not hex
+- Ed25519 signatures are 64 bytes
+- SMTP providers have rate limits - implement queuing early
+- Test email deliverability thoroughly (SPF/DKIM/DMARC)
+
+## Environment Variables
+```bash
+# Application
+NODE_ENV=development
+PORT=3000
+DOMAIN=localhost
+
+# Database
+DATABASE_URL=postgresql://user:pass@localhost:5432/pubkeymail
+DATABASE_POOL_SIZE=10
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Email
+EMAIL_RETENTION_DAYS=30
+SMTP_PROVIDER=sendgrid
+SMTP_API_KEY=your-api-key
+SMTP_WEBHOOK_SECRET=your-webhook-secret
+
+# Blockchain
+SOLANA_RPC_ENDPOINT=https://api.devnet.solana.com
+SOLANA_CLUSTER=devnet
+
+# Authentication
+JWT_SECRET=your-secret-key
+SESSION_DURATION=86400
+
+# Payments (add when implementing)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+SOLANA_PAY_MERCHANT_WALLET=
+```
+
+## Useful Commands
+```bash
+# Check Solana CLI installation
+solana --version
+
+# Test database connection
+psql $DATABASE_URL -c "SELECT 1"
+
+# Test Redis connection
+redis-cli ping
+
+# Generate test wallet
+solana-keygen new --outfile test-wallet.json
+
+# Check email queue status (when implemented)
+npm run queue:status
+
+# Run cleanup job manually (when implemented)
+npm run cleanup:emails
+```
 
 ## Feature Development Quality Standards
 
