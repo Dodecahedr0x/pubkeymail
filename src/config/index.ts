@@ -51,6 +51,7 @@ const envSchema = z.object({
 
   // Blockchain - Ethereum
   ETHEREUM_RPC_ENDPOINT: z.string().url().optional(),
+  ETHEREUM_CHAIN_ID: z.coerce.number().positive().default(1),
   ENS_CACHE_TTL: z.coerce.number().positive().default(3600),
 
   // Authentication
@@ -185,7 +186,8 @@ export const solanaConfig = {
 };
 
 export const ethereumConfig = {
-  rpcEndpoint: config.ETHEREUM_RPC_ENDPOINT || 'https://eth.llamarpc.com',
+  rpcEndpoint: config.ETHEREUM_RPC_ENDPOINT,
+  chainId: config.ETHEREUM_CHAIN_ID,
   ensCacheTTL: config.ENS_CACHE_TTL,
 };
 
