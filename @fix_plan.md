@@ -88,14 +88,14 @@
 - [x] Write user management tests
 
 ### Payment Integration
-- [ ] Setup Stripe integration for fiat payments
-- [ ] Implement Stripe webhook handling
-- [ ] Create Solana Pay integration
-- [ ] Build payment verification service
-- [ ] Implement automatic tier upgrades on payment
-- [ ] Add subscription expiration handling
-- [ ] Create payment reconciliation system
-- [ ] Write payment integration tests
+- [x] Setup Stripe integration for fiat payments
+- [x] Implement Stripe webhook handling
+- [x] Create Solana Pay integration
+- [x] Build payment verification service
+- [x] Implement automatic tier upgrades on payment
+- [x] Add subscription expiration handling
+- [ ] Create payment reconciliation system (pending production setup)
+- [x] Write payment integration tests
 
 ### Tier Management
 - [ ] Implement tier-based feature gating
@@ -290,6 +290,11 @@
 - [x] Redis-backed nonce storage for authentication
 
 ## Recent Completions
+- ✅ Payment Service with Stripe and Solana Pay integration
+- ✅ Payment API routes (checkout, webhooks, verify, cancel)
+- ✅ Health check endpoints (/health, /health/ready, /health/live)
+- ✅ Database, Redis, and scheduler health monitoring
+- ✅ Payment service tests (14 tests)
 - ✅ Database migrations system with node-pg-migrate
 - ✅ User registration service with wallet-based signup
 - ✅ Subscription tier management (free/paid)
@@ -312,25 +317,26 @@
 ## Next Priority Tasks
 
 ### Immediate (Next Loop)
-1. **Payment Integration** - Stripe and Solana Pay
-   - Setup Stripe integration for fiat payments
-   - Implement Stripe webhook handling
-   - Create Solana Pay integration
-   - Build payment verification service
-
-2. **Health Check Endpoints** - For monitoring and deployment
-   - Add /health and /ready endpoints
-   - Include database and Redis connectivity checks
-
-3. **Email Sending** - Outbound SMTP functionality
-   - Setup SMTP provider for outbound
+1. **Email Sending** - Outbound SMTP functionality
+   - Setup SMTP provider for outbound (SendGrid/Postmark)
    - Implement email composition API
    - Add delivery status tracking
+   - Create "From" address selector
+
+2. **Tier-based Feature Gating** - Restrict features by subscription
+   - Gate email sending to paid tier
+   - Enforce rate limits by tier
+   - Add tier checks to API middleware
+
+3. **Main Application Entry Point** - Wire everything together
+   - Create Express app with all routes
+   - Add CORS and security middleware
+   - Setup graceful shutdown
 
 ### Soon
 4. **Web App Setup** - Frontend framework, wallet connection UI
-5. **Tier-based feature gating** - Restrict features by subscription
-6. **SPF/DKIM/DMARC Setup** - Email deliverability
+5. **SPF/DKIM/DMARC Setup** - Email deliverability
+6. **Advanced forwarding filters** - Enhanced filtering options
 
 ## Notes
 - **Case Sensitivity**: Critical throughout - addresses are case-sensitive
