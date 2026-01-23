@@ -43,7 +43,7 @@ export interface Email {
   receivedAt: Date;
   expiresAt: Date | null; // null = keep indefinitely (paid users)
   isEncrypted: boolean;
-  encryptionMetadata: Record<string, any> | null;
+  encryptionMetadata: Record<string, unknown> | null;
 }
 
 /**
@@ -58,7 +58,7 @@ export interface CreateEmailData {
   headers?: EmailHeaders;
   attachments?: EmailAttachment[];
   isEncrypted?: boolean;
-  encryptionMetadata?: Record<string, any>;
+  encryptionMetadata?: Record<string, unknown>;
 }
 
 /**

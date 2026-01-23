@@ -4,8 +4,15 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { PoolClient } from 'pg';
 import { EmailCleanupService } from '../cleanup-service.js';
 import { db } from '../../../database/connection.js';
+import { mockQueryResult, mockMutationResult } from '../../../test-utils/mock-query-result.js';
+
+interface MockPoolClient {
+  query: ReturnType<typeof vi.fn>;
+  release: ReturnType<typeof vi.fn>;
+}
 
 /**
  * Mock database for testing
@@ -33,18 +40,16 @@ describe('EmailCleanupService', () => {
     it('should return accurate cleanup statistics', async () => {
       // Mock query responses
       const mockQueryResults = [
-        { rows: [{ count: '10000' }] }, // Total emails
-        { rows: [{ count: '500' }] }, // Expired emails
-        { rows: [{ count: '8000' }] }, // Registered user emails
-        { rows: [{ count: '2000' }] }, // Unregistered user emails
-        {
-          rows: [
-            {
-              oldest: new Date('2024-01-01'),
-              newest: new Date('2024-01-10'),
-            },
-          ],
-        }, // Date range
+        mockQueryResult([{ count: '10000' }]), // Total emails
+        mockQueryResult([{ count: '500' }]), // Expired emails
+        mockQueryResult([{ count: '8000' }]), // Registered user emails
+        mockQueryResult([{ count: '2000' }]), // Unregistered user emails
+        mockQueryResult([
+          {
+            oldest: new Date('2024-01-01'),
+            newest: new Date('2024-01-10'),
+          },
+        ]), // Date range
       ];
 
       let callIndex = 0;
@@ -64,11 +69,11 @@ describe('EmailCleanupService', () => {
 
     it('should handle case with no expired emails', async () => {
       const mockQueryResults = [
-        { rows: [{ count: '5000' }] }, // Total emails
-        { rows: [{ count: '0' }] }, // Expired emails
-        { rows: [{ count: '5000' }] }, // Registered user emails
-        { rows: [{ count: '0' }] }, // Unregistered user emails
-        { rows: [{ oldest: null, newest: null }] }, // Date range
+        mockQueryResult([{ count: '5000' }]), // Total emails
+        mockQueryResult([{ count: '0' }]), // Expired emails
+        mockQueryResult([{ count: '5000' }]), // Registered user emails
+        mockQueryResult([{ count: '0' }]), // Unregistered user emails
+        mockQueryResult([{ oldest: null, newest: null }]), // Date range
       ];
 
       let callIndex = 0;
@@ -87,13 +92,13 @@ describe('EmailCleanupService', () => {
   describe('cleanupExpiredEmails', () => {
     it('should skip cleanup when no expired emails exist', async () => {
       // Mock stats showing no expired emails
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '5000' }] }); // Total
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '0' }] }); // Expired
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '5000' }] }); // Registered
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '0' }] }); // Unregistered
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ oldest: null, newest: null }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '5000' }])); // Total
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '0' }])); // Expired
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '5000' }])); // Registered
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '0' }])); // Unregistered
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ oldest: null, newest: null }])
+      );
 
       const result = await cleanupService.cleanupExpiredEmails();
 
@@ -105,13 +110,13 @@ describe('EmailCleanupService', () => {
 
     it('should respect safety threshold', async () => {
       // Mock stats showing too many expired emails
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '200000' }] }); // Total
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '150000' }] }); // Expired (exceeds safety threshold)
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '50000' }] }); // Registered
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '150000' }] }); // Unregistered
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ oldest: new Date(), newest: new Date() }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '200000' }])); // Total
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '150000' }])); // Expired (exceeds safety threshold)
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '50000' }])); // Registered
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '150000' }])); // Unregistered
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ oldest: new Date(), newest: new Date() }])
+      );
 
       const result = await cleanupService.cleanupExpiredEmails();
 
@@ -123,23 +128,23 @@ describe('EmailCleanupService', () => {
 
     it('should perform cleanup in batches (dry run)', async () => {
       // Mock stats
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '10000' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '1500' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '8500' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '1500' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ oldest: new Date(), newest: new Date() }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '10000' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '1500' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '8500' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '1500' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ oldest: new Date(), newest: new Date() }])
+      );
 
       // Mock batch queries (dry run)
       vi.mocked(db.query)
-        .mockResolvedValueOnce({
-          rows: [{ count: '1000', addresses: [1, 2, 3] }],
-        }) // Batch 1
-        .mockResolvedValueOnce({
-          rows: [{ count: '500', addresses: [4, 5] }],
-        }) // Batch 2
-        .mockResolvedValueOnce({ rows: [{ count: '0', addresses: [] }] }); // No more
+        .mockResolvedValueOnce(
+          mockQueryResult([{ count: '1000', addresses: [1, 2, 3] }])
+        ) // Batch 1
+        .mockResolvedValueOnce(
+          mockQueryResult([{ count: '500', addresses: [4, 5] }])
+        ) // Batch 2
+        .mockResolvedValueOnce(mockQueryResult([{ count: '0', addresses: [] }])); // No more
 
       const result = await cleanupService.cleanupExpiredEmails({
         dryRun: true,
@@ -156,13 +161,13 @@ describe('EmailCleanupService', () => {
 
     it('should handle cleanup errors gracefully', async () => {
       // Mock stats
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '10000' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '100' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '9900' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '100' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ oldest: new Date(), newest: new Date() }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '10000' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '100' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '9900' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '100' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ oldest: new Date(), newest: new Date() }])
+      );
 
       // Mock batch query to fail
       vi.mocked(db.query).mockRejectedValueOnce(new Error('Database error'));
@@ -197,7 +202,7 @@ describe('EmailCleanupService', () => {
         },
       ];
 
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: mockEmails });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult(mockEmails));
 
       const preview = await cleanupService.getExpiredEmailsPreview(10);
 
@@ -208,7 +213,7 @@ describe('EmailCleanupService', () => {
     });
 
     it('should respect limit parameter', async () => {
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [] });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([]));
 
       await cleanupService.getExpiredEmailsPreview(50);
 
@@ -221,7 +226,7 @@ describe('EmailCleanupService', () => {
 
   describe('cleanupAddressEmails', () => {
     it('should cleanup emails for specific address (dry run)', async () => {
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '25' }] });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '25' }]));
 
       const result = await cleanupService.cleanupAddressEmails(123, 60, true);
 
@@ -233,7 +238,7 @@ describe('EmailCleanupService', () => {
     });
 
     it('should delete emails for specific address', async () => {
-      vi.mocked(db.query).mockResolvedValueOnce({ rowCount: 15 });
+      vi.mocked(db.query).mockResolvedValueOnce(mockMutationResult(15));
 
       const result = await cleanupService.cleanupAddressEmails(456, 90, false);
 
@@ -245,7 +250,7 @@ describe('EmailCleanupService', () => {
     });
 
     it('should only delete emails with expires_at set', async () => {
-      vi.mocked(db.query).mockResolvedValueOnce({ rowCount: 10 });
+      vi.mocked(db.query).mockResolvedValueOnce(mockMutationResult(10));
 
       await cleanupService.cleanupAddressEmails(789, 30, false);
 
@@ -258,39 +263,38 @@ describe('EmailCleanupService', () => {
   describe('Batch deletion logic', () => {
     it('should use transactions for actual deletions', async () => {
       // Setup mock client for transaction
-      const mockClient = {
+      const mockClient: MockPoolClient = {
         query: vi.fn(),
         release: vi.fn(),
       };
 
-      vi.mocked(db.getClient).mockResolvedValueOnce(mockClient as any);
+      vi.mocked(db.getClient).mockResolvedValueOnce(mockClient as unknown as PoolClient);
 
       // Mock stats
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '1000' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '50' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '950' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '50' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ oldest: new Date(), newest: new Date() }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '1000' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '50' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '950' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '50' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ oldest: new Date(), newest: new Date() }])
+      );
 
       // Mock transaction queries
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({
-          // SELECT for batch
-          rows: [
+        .mockResolvedValueOnce(
+          mockQueryResult([
             { id: 'email-1', recipient_address_id: 1 },
             { id: 'email-2', recipient_address_id: 2 },
-          ],
-        })
-        .mockResolvedValueOnce({ rowCount: 2 }) // DELETE
+          ])
+        ) // SELECT for batch
+        .mockResolvedValueOnce(mockMutationResult(2)) // DELETE
         .mockResolvedValueOnce(undefined) // COMMIT
         .mockResolvedValueOnce(undefined) // BEGIN (second batch)
-        .mockResolvedValueOnce({ rows: [] }) // SELECT empty
+        .mockResolvedValueOnce(mockQueryResult([])) // SELECT empty
         .mockResolvedValueOnce(undefined); // COMMIT
 
-      const result = await cleanupService.cleanupExpiredEmails({
+      await cleanupService.cleanupExpiredEmails({
         dryRun: false,
         batchSize: 10,
         maxBatches: 2,
@@ -303,28 +307,28 @@ describe('EmailCleanupService', () => {
     });
 
     it('should rollback on error during deletion', async () => {
-      const mockClient = {
+      const mockClient: MockPoolClient = {
         query: vi.fn(),
         release: vi.fn(),
       };
 
-      vi.mocked(db.getClient).mockResolvedValueOnce(mockClient as any);
+      vi.mocked(db.getClient).mockResolvedValueOnce(mockClient as unknown as PoolClient);
 
       // Mock stats
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '1000' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '10' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '990' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '10' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ oldest: new Date(), newest: new Date() }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '1000' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '10' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '990' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '10' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ oldest: new Date(), newest: new Date() }])
+      );
 
       // Mock transaction with error
       mockClient.query
         .mockResolvedValueOnce(undefined) // BEGIN
-        .mockResolvedValueOnce({
-          rows: [{ id: 'email-1', recipient_address_id: 1 }],
-        }) // SELECT
+        .mockResolvedValueOnce(
+          mockQueryResult([{ id: 'email-1', recipient_address_id: 1 }])
+        ) // SELECT
         .mockRejectedValueOnce(new Error('Delete failed')); // DELETE fails
 
       await cleanupService.cleanupExpiredEmails({
@@ -341,17 +345,17 @@ describe('EmailCleanupService', () => {
   describe('Safety checks', () => {
     it('should never delete emails with expires_at = NULL', async () => {
       // This test verifies the SQL query includes proper WHERE clause
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '1000' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '10' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '990' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '10' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ oldest: new Date(), newest: new Date() }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '1000' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '10' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '990' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '10' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ oldest: new Date(), newest: new Date() }])
+      );
 
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ count: '10', addresses: [1] }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ count: '10', addresses: [1] }])
+      );
 
       await cleanupService.cleanupExpiredEmails({ dryRun: true });
 
@@ -365,19 +369,19 @@ describe('EmailCleanupService', () => {
 
     it('should respect maxBatches limit', async () => {
       // Mock stats
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '10000' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '5000' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '5000' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '5000' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ oldest: new Date(), newest: new Date() }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '10000' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '5000' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '5000' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '5000' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ oldest: new Date(), newest: new Date() }])
+      );
 
       // Mock many batches available
       for (let i = 0; i < 10; i++) {
-        vi.mocked(db.query).mockResolvedValueOnce({
-          rows: [{ count: '100', addresses: [i] }],
-        });
+        vi.mocked(db.query).mockResolvedValueOnce(
+          mockQueryResult([{ count: '100', addresses: [i] }])
+        );
       }
 
       const result = await cleanupService.cleanupExpiredEmails({
@@ -395,7 +399,7 @@ describe('EmailCleanupService', () => {
       const startTime = Date.now();
 
       // Mock quick responses
-      vi.mocked(db.query).mockResolvedValue({ rows: [{ count: '0' }] });
+      vi.mocked(db.query).mockResolvedValue(mockQueryResult([{ count: '0' }]));
 
       await cleanupService.cleanupExpiredEmails();
 
@@ -406,13 +410,13 @@ describe('EmailCleanupService', () => {
     });
 
     it('should report duration in cleanup result', async () => {
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '100' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '0' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '100' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [{ count: '0' }] });
-      vi.mocked(db.query).mockResolvedValueOnce({
-        rows: [{ oldest: null, newest: null }],
-      });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '100' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '0' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '100' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([{ count: '0' }]));
+      vi.mocked(db.query).mockResolvedValueOnce(
+        mockQueryResult([{ oldest: null, newest: null }])
+      );
 
       const result = await cleanupService.cleanupExpiredEmails();
 

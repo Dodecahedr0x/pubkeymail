@@ -1,12 +1,13 @@
 /**
  * Blockchain Provider Factory
  * Creates and manages blockchain provider instances
- * Supports multiple blockchains (Solana, Ethereum, etc.)
+ * Supports multiple blockchains (Solana, Ethereum, Polygon)
  */
 
 import { IBlockchainProvider, BlockchainType } from '../../types/blockchain.js';
 import { SolanaProvider } from './solana-provider.js';
 import { EthereumProvider } from './ethereum-provider.js';
+import { PolygonProvider } from './polygon-provider.js';
 
 /**
  * Registry of blockchain providers
@@ -41,8 +42,8 @@ export function getBlockchainProvider(
       break;
 
     case 'polygon':
-      // TODO: Implement Polygon provider
-      throw new Error(`${blockchain} provider not yet implemented`);
+      provider = new PolygonProvider();
+      break;
 
     default:
       throw new Error(`Unsupported blockchain: ${blockchain}`);
@@ -58,7 +59,7 @@ export function getBlockchainProvider(
  * @returns Array of blockchain types that have providers
  */
 export function getSupportedBlockchains(): BlockchainType[] {
-  return ['solana', 'ethereum'];
+  return ['solana', 'ethereum', 'polygon'];
 }
 
 /**

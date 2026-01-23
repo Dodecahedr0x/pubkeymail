@@ -61,13 +61,57 @@ export function parseEmailAddress(email: string): {
   }
 
   // Check if local part looks like a name service (ends with .sol, .eth, etc.)
-  const isNameService = /\.(sol|eth)$/i.test(localPart);
+  const isNameService = /\.(sol|eth|crypto|nft|blockchain|wallet|x|888)$/i.test(localPart);
 
   return {
     localPart,
     domain,
     isNameService,
   };
+}
+
+/**
+ * TLD to blockchain/name service mapping
+ */
+const TLD_MAPPING: Record<string, { blockchain: BlockchainType; nameService: string }> = {
+  '.sol': { blockchain: 'solana', nameService: 'SNS' },
+  '.eth': { blockchain: 'ethereum', nameService: 'ENS' },
+  '.crypto': { blockchain: 'polygon', nameService: 'unstoppable' },
+  '.nft': { blockchain: 'polygon', nameService: 'unstoppable' },
+  '.blockchain': { blockchain: 'polygon', nameService: 'unstoppable' },
+  '.wallet': { blockchain: 'polygon', nameService: 'unstoppable' },
+  '.x': { blockchain: 'polygon', nameService: 'unstoppable' },
+  '.888': { blockchain: 'polygon', nameService: 'unstoppable' },
+};
+
+/**
+ * Detect blockchain and name service type from TLD
+ *
+ * @param name - Domain name (e.g., "vitalik.eth", "toly.sol")
+ * @param defaultBlockchain - Fallback blockchain if TLD not recognized
+ * @returns Blockchain type and name service
+ */
+function detectBlockchainFromTLD(
+  name: string,
+  defaultBlockchain: BlockchainType
+): { blockchain: BlockchainType; nameService: string } {
+  const lowerName = name.toLowerCase();
+
+  for (const [tld, mapping] of Object.entries(TLD_MAPPING)) {
+    if (lowerName.endsWith(tld)) {
+      return mapping;
+    }
+  }
+
+  // Default fallback based on blockchain
+  if (defaultBlockchain === 'ethereum') {
+    return { blockchain: 'ethereum', nameService: 'ENS' };
+  }
+  if (defaultBlockchain === 'polygon') {
+    return { blockchain: 'polygon', nameService: 'unstoppable' };
+  }
+
+  return { blockchain: 'solana', nameService: 'SNS' };
 }
 
 /**
@@ -92,20 +136,14 @@ export async function resolveEmailToBlockchainAddress(
 
   // If it's a name service, resolve it
   if (isNameService) {
-    const blockchain = defaultBlockchain; // TODO: Detect blockchain from TLD
+    // Detect blockchain and name service from TLD
+    const { blockchain, nameService } = detectBlockchainFromTLD(localPart, defaultBlockchain);
     const provider = getBlockchainProvider(blockchain);
-
-    // Determine name service type based on TLD
-    const nameService = localPart.endsWith('.sol')
-      ? 'SNS'
-      : localPart.endsWith('.eth')
-      ? 'ENS'
-      : 'SNS'; // Default
 
     try {
       const resolution = await provider.resolveNameService(
         localPart,
-        nameService as any
+        nameService as 'SNS' | 'ENS'
       );
 
       return {

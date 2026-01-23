@@ -7,6 +7,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { emailStorageService } from '../../services/email/index.js';
 import {
   parseWebhookEmail,
@@ -19,30 +20,108 @@ import { smtpConfig } from '../../config/index.js';
 const router: Router = Router();
 
 /**
+ * Verify SendGrid webhook signature
+ * @see https://docs.sendgrid.com/for-developers/tracking-events/getting-started-event-webhook-security-features
+ */
+function verifySendGridSignature(req: Request, secret: string): boolean {
+  const signature = req.headers['x-twilio-email-event-webhook-signature'] as string;
+  const timestamp = req.headers['x-twilio-email-event-webhook-timestamp'] as string;
+
+  if (!signature || !timestamp) return false;
+
+  const payload = timestamp + JSON.stringify(req.body);
+  const expectedSignature = createHmac('sha256', secret)
+    .update(payload)
+    .digest('base64');
+
+  try {
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Verify Postmark webhook signature
+ * @see https://postmarkapp.com/developer/webhooks/webhooks-overview
+ */
+function verifyPostmarkSignature(req: Request, secret: string): boolean {
+  const signature = req.headers['x-postmark-signature'] as string;
+
+  if (!signature) return false;
+
+  const payload = JSON.stringify(req.body);
+  const expectedSignature = createHmac('sha256', secret)
+    .update(payload)
+    .digest('base64');
+
+  try {
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Verify Mailgun webhook signature
+ * @see https://documentation.mailgun.com/en/latest/user_manual.html#webhooks-1
+ */
+function verifyMailgunSignature(req: Request, secret: string): boolean {
+  const timestamp = req.body?.signature?.timestamp as string;
+  const token = req.body?.signature?.token as string;
+  const signature = req.body?.signature?.signature as string;
+
+  if (!timestamp || !token || !signature) return false;
+
+  const expectedSignature = createHmac('sha256', secret)
+    .update(timestamp + token)
+    .digest('hex');
+
+  try {
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Verify webhook signature (provider-specific)
- * This should be implemented based on the SMTP provider being used
+ * Implements proper HMAC signature verification for each provider.
  *
  * @param req - Express request
  * @returns True if signature is valid
  */
 function verifyWebhookSignature(req: Request): boolean {
-  const signature = req.headers['x-webhook-signature'] as string;
   const secret = smtpConfig.webhookSecret;
+  const provider = smtpConfig.provider;
 
-  // TODO: Implement provider-specific signature verification
-  // SendGrid: https://docs.sendgrid.com/for-developers/parsing-email/inbound-email#verify-the-webhook-signature
-  // Postmark: Uses X-Postmark-Signature header
-  // Mailgun: Uses X-Mailgun-Signature and timestamp
+  // In development/test mode without production flag, allow unsigned webhooks
+  if (process.env['NODE_ENV'] !== 'production') {
+    const hasAnySignature =
+      req.headers['x-twilio-email-event-webhook-signature'] ||
+      req.headers['x-postmark-signature'] ||
+      req.headers['x-webhook-signature'] ||
+      req.body?.signature?.signature;
 
-  if (!signature) {
-    // For development, allow unsigned webhooks
-    // In production, this should return false
-    return process.env['NODE_ENV'] !== 'production';
+    if (!hasAnySignature) {
+      return true;
+    }
   }
 
-  // Basic validation - check if signature exists and matches secret
-  // This is a placeholder - implement proper HMAC verification
-  return signature === secret;
+  // Verify based on provider
+  switch (provider) {
+    case 'sendgrid':
+      return verifySendGridSignature(req, secret);
+    case 'postmark':
+      return verifyPostmarkSignature(req, secret);
+    case 'mailgun':
+      return verifyMailgunSignature(req, secret);
+    default: {
+      // Fallback: check for generic signature header
+      const genericSignature = req.headers['x-webhook-signature'] as string;
+      return genericSignature === secret;
+    }
+  }
 }
 
 /**
@@ -79,7 +158,7 @@ router.post('/inbound', async (req: Request, res: Response) => {
     }
 
     // Parse webhook payload
-    const parsed = parseWebhookEmail(req.body, smtpConfig.provider as any);
+    const parsed = parseWebhookEmail(req.body, smtpConfig.provider as 'sendgrid' | 'postmark' | 'mailgun');
 
     // Convert to email creation data
     let emailData = webhookToCreateEmailData(parsed);

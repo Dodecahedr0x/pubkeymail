@@ -22,6 +22,7 @@ vi.mock('../../../src/config/index.js', () => ({
   config: {
     REDIS_URL: 'redis://localhost:6379',
   },
+  isLocalDevMode: false,
 }));
 
 import { emailQueue, type EmailJobData } from '../../../src/services/queue/email-queue.js';

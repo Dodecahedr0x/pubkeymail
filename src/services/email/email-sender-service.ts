@@ -515,9 +515,10 @@ export class EmailSenderService {
   }
 
   /**
-   * Send via SendGrid
+   * Send via SendGrid API
+   * @see https://docs.sendgrid.com/api-reference/mail-send/mail-send
    */
-  private async sendViaSendGrid(_email: {
+  private async sendViaSendGrid(email: {
     from: string;
     to: string;
     subject: string;
@@ -525,23 +526,48 @@ export class EmailSenderService {
     html?: string;
     replyTo?: string;
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    // TODO: Implement SendGrid API call
-    // const sgMail = require('@sendgrid/mail');
-    // sgMail.setApiKey(smtpConfig.apiKey);
-    // const msg = { to, from, subject, text, html };
-    // const response = await sgMail.send(msg);
-    // return { success: true, messageId: response[0].headers['x-message-id'] };
+    try {
+      const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${smtpConfig.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: [{ to: [{ email: email.to }] }],
+          from: { email: email.from },
+          reply_to: email.replyTo ? { email: email.replyTo } : undefined,
+          subject: email.subject,
+          content: [
+            ...(email.text ? [{ type: 'text/plain', value: email.text }] : []),
+            ...(email.html ? [{ type: 'text/html', value: email.html }] : []),
+          ],
+        }),
+      });
 
-    return {
-      success: false,
-      error: 'SendGrid integration not yet implemented',
-    };
+      if (!response.ok) {
+        const errorBody = await response.text();
+        return {
+          success: false,
+          error: `SendGrid API error: ${response.status} - ${errorBody}`,
+        };
+      }
+
+      const messageId = response.headers.get('x-message-id') || `sg_${Date.now()}`;
+      return { success: true, messageId };
+    } catch (error) {
+      return {
+        success: false,
+        error: `SendGrid request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
   }
 
   /**
-   * Send via Postmark
+   * Send via Postmark API
+   * @see https://postmarkapp.com/developer/api/email-api
    */
-  private async sendViaPostmark(_email: {
+  private async sendViaPostmark(email: {
     from: string;
     to: string;
     subject: string;
@@ -549,17 +575,47 @@ export class EmailSenderService {
     html?: string;
     replyTo?: string;
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    // TODO: Implement Postmark API call
-    return {
-      success: false,
-      error: 'Postmark integration not yet implemented',
-    };
+    try {
+      const response = await fetch('https://api.postmarkapp.com/email', {
+        method: 'POST',
+        headers: {
+          'X-Postmark-Server-Token': smtpConfig.apiKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          From: email.from,
+          To: email.to,
+          Subject: email.subject,
+          TextBody: email.text,
+          HtmlBody: email.html,
+          ReplyTo: email.replyTo,
+        }),
+      });
+
+      const data = await response.json() as { MessageID?: string; ErrorCode?: number; Message?: string };
+
+      if (!response.ok || data.ErrorCode) {
+        return {
+          success: false,
+          error: `Postmark API error: ${data.Message || response.statusText}`,
+        };
+      }
+
+      return { success: true, messageId: data.MessageID };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Postmark request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
   }
 
   /**
-   * Send via Mailgun
+   * Send via Mailgun API
+   * @see https://documentation.mailgun.com/en/latest/api-sending-messages.html
    */
-  private async sendViaMailgun(_email: {
+  private async sendViaMailgun(email: {
     from: string;
     to: string;
     subject: string;
@@ -567,11 +623,42 @@ export class EmailSenderService {
     html?: string;
     replyTo?: string;
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
-    // TODO: Implement Mailgun API call
-    return {
-      success: false,
-      error: 'Mailgun integration not yet implemented',
-    };
+    try {
+      // Extract domain from the from address for the API endpoint
+      const domain = email.from.split('@')[1] || this.fromDomain;
+      const formData = new URLSearchParams();
+      formData.append('from', email.from);
+      formData.append('to', email.to);
+      formData.append('subject', email.subject);
+      if (email.text) formData.append('text', email.text);
+      if (email.html) formData.append('html', email.html);
+      if (email.replyTo) formData.append('h:Reply-To', email.replyTo);
+
+      const response = await fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`api:${smtpConfig.apiKey}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData.toString(),
+      });
+
+      const data = await response.json() as { id?: string; message?: string };
+
+      if (!response.ok) {
+        return {
+          success: false,
+          error: `Mailgun API error: ${data.message || response.statusText}`,
+        };
+      }
+
+      return { success: true, messageId: data.id };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Mailgun request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
   }
 
   /**

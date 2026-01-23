@@ -1,10 +1,11 @@
 /**
  * Authentication Services
- * Export authentication-related functionality with Redis-backed nonce storage
+ * Export authentication-related functionality with environment-aware nonce storage
  */
 
 import { AuthService } from './auth-service.js';
 import { RedisNonceStore } from '../cache/redis-nonce-store.js';
+import { isLocalDevMode } from '../../config/index.js';
 
 export { AuthService } from './auth-service.js';
 export type {
@@ -14,7 +15,9 @@ export type {
 } from './auth-service.js';
 
 /**
- * Production auth service instance with Redis nonce store
- * Creates singleton with Redis-backed nonce storage
+ * Auth service instance with environment-aware nonce storage
+ * Uses in-memory store for local dev, Redis for production
  */
-export const authService = new AuthService(new RedisNonceStore());
+export const authService = isLocalDevMode
+  ? new AuthService() // Uses MemoryNonceStore internally
+  : new AuthService(new RedisNonceStore());

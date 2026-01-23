@@ -8,7 +8,7 @@
  */
 
 import Bull, { Queue, Job } from 'bull';
-import { config } from '../../config/index.js';
+import { config, isLocalDevMode } from '../../config/index.js';
 
 export interface EmailJobData {
   type: 'forward' | 'send' | 'cleanup';
@@ -38,7 +38,19 @@ class EmailQueue {
       return;
     }
 
-    this.queue = new Bull<EmailJobData>('email-queue', config.REDIS_URL, {
+    // In local dev mode, queue operations are no-ops
+    if (isLocalDevMode) {
+      console.log('📬 Email queue disabled in local dev mode');
+      this.isInitialized = true;
+      return;
+    }
+
+    const redisUrl = config.REDIS_URL;
+    if (!redisUrl) {
+      throw new Error('REDIS_URL is required for email queue');
+    }
+
+    this.queue = new Bull<EmailJobData>('email-queue', redisUrl, {
       defaultJobOptions: {
         attempts: 3,
         backoff: {

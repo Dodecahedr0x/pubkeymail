@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RecipientVerificationService } from '../recipient-verification.js';
+import { mockQueryResult } from '../../../test-utils/mock-query-result.js';
 
 // Mock database
 vi.mock('../../../database/connection.js', () => ({
@@ -67,13 +68,9 @@ describe('RecipientVerificationService', () => {
 
   describe('verifyInternalRecipient', () => {
     it('should return valid for registered address', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 1, address: 'GNa9E2dWPgxHePV5hRzMZrJ1RrSzBx9rX3kgYNQGvrch' }],
-        rowCount: 1,
-        command: 'SELECT',
-        oid: 0,
-        fields: [],
-      });
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([{ id: 1, address: 'GNa9E2dWPgxHePV5hRzMZrJ1RrSzBx9rX3kgYNQGvrch' }])
+      );
 
       const result = await service.verifyInternalRecipient(
         'GNa9E2dWPgxHePV5hRzMZrJ1RrSzBx9rX3kgYNQGvrch@pubkeymail.com'
@@ -84,13 +81,7 @@ describe('RecipientVerificationService', () => {
     });
 
     it('should return invalid for unregistered address', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [],
-        rowCount: 0,
-        command: 'SELECT',
-        oid: 0,
-        fields: [],
-      });
+      mockQuery.mockResolvedValueOnce(mockQueryResult([]));
 
       const result = await service.verifyInternalRecipient(
         'UnregisteredAddress123456789012345678901234567@pubkeymail.com'
@@ -101,13 +92,9 @@ describe('RecipientVerificationService', () => {
     });
 
     it('should extract address from email correctly', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 5, address: 'TestAddress12345678901234567890123456789012' }],
-        rowCount: 1,
-        command: 'SELECT',
-        oid: 0,
-        fields: [],
-      });
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([{ id: 5, address: 'TestAddress12345678901234567890123456789012' }])
+      );
 
       const result = await service.verifyInternalRecipient(
         'TestAddress12345678901234567890123456789012@pubkeymail.com'
@@ -130,13 +117,9 @@ describe('RecipientVerificationService', () => {
     });
 
     it('should verify internal recipient exists', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 1, address: 'GNa9E2dWPgxHePV5hRzMZrJ1RrSzBx9rX3kgYNQGvrch' }],
-        rowCount: 1,
-        command: 'SELECT',
-        oid: 0,
-        fields: [],
-      });
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([{ id: 1, address: 'GNa9E2dWPgxHePV5hRzMZrJ1RrSzBx9rX3kgYNQGvrch' }])
+      );
 
       const result = await service.verifyRecipient(
         'GNa9E2dWPgxHePV5hRzMZrJ1RrSzBx9rX3kgYNQGvrch@pubkeymail.com'
@@ -154,13 +137,7 @@ describe('RecipientVerificationService', () => {
     });
 
     it('should fail for unregistered internal recipient', async () => {
-      mockQuery.mockResolvedValueOnce({
-        rows: [],
-        rowCount: 0,
-        command: 'SELECT',
-        oid: 0,
-        fields: [],
-      });
+      mockQuery.mockResolvedValueOnce(mockQueryResult([]));
 
       const result = await service.verifyRecipient(
         'UnknownAddress1234567890123456789012345678901@pubkeymail.com'
@@ -174,13 +151,9 @@ describe('RecipientVerificationService', () => {
   describe('verifyMultipleRecipients', () => {
     it('should verify all recipients and return combined results', async () => {
       // First recipient (internal, exists)
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ id: 1, address: 'ValidAddress123456789012345678901234567890123' }],
-        rowCount: 1,
-        command: 'SELECT',
-        oid: 0,
-        fields: [],
-      });
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([{ id: 1, address: 'ValidAddress123456789012345678901234567890123' }])
+      );
 
       const recipients = [
         'ValidAddress123456789012345678901234567890123@pubkeymail.com',

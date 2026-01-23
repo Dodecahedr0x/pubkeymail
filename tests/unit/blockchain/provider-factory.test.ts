@@ -12,6 +12,7 @@ import {
 } from '../../../src/services/blockchain/provider-factory.js';
 import { SolanaProvider } from '../../../src/services/blockchain/solana-provider.js';
 import { EthereumProvider } from '../../../src/services/blockchain/ethereum-provider.js';
+import { PolygonProvider } from '../../../src/services/blockchain/polygon-provider.js';
 
 describe('ProviderFactory', () => {
   afterEach(() => {
@@ -41,10 +42,11 @@ describe('ProviderFactory', () => {
       expect(provider.getBlockchainType()).toBe('ethereum');
     });
 
-    it('should throw error for polygon (not yet implemented)', () => {
-      expect(() => getBlockchainProvider('polygon')).toThrow(
-        'polygon provider not yet implemented'
-      );
+    it('should return PolygonProvider for polygon blockchain', () => {
+      const provider = getBlockchainProvider('polygon');
+
+      expect(provider).toBeInstanceOf(PolygonProvider);
+      expect(provider.getBlockchainType()).toBe('polygon');
     });
 
     it('should throw error for invalid blockchain', () => {
@@ -55,13 +57,14 @@ describe('ProviderFactory', () => {
   });
 
   describe('getSupportedBlockchains', () => {
-    it('should return array with solana and ethereum', () => {
+    it('should return array with solana, ethereum, and polygon', () => {
       const supported = getSupportedBlockchains();
 
       expect(supported).toBeInstanceOf(Array);
       expect(supported).toContain('solana');
       expect(supported).toContain('ethereum');
-      expect(supported.length).toBe(2);
+      expect(supported).toContain('polygon');
+      expect(supported.length).toBe(3);
     });
   });
 
@@ -74,8 +77,8 @@ describe('ProviderFactory', () => {
       expect(isBlockchainSupported('ethereum')).toBe(true);
     });
 
-    it('should return false for polygon (not yet implemented)', () => {
-      expect(isBlockchainSupported('polygon')).toBe(false);
+    it('should return true for polygon', () => {
+      expect(isBlockchainSupported('polygon')).toBe(true);
     });
 
     it('should return false for invalid blockchain', () => {

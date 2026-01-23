@@ -1,7 +1,8 @@
 /**
- * Redis Client - Singleton Redis connection manager
+ * Cache Client - Unified cache client manager
  *
- * Provides a centralized Redis client for caching, session management, and distributed state.
+ * Provides a centralized cache client for caching, session management, and distributed state.
+ * Supports both Redis (production) and in-memory (local dev) backends.
  * Used for:
  * - Authentication nonce storage
  * - Name service resolution caching
@@ -10,17 +11,31 @@
  */
 
 import { createClient } from 'redis';
-import { config } from '../../config/index.js';
+import { config, isLocalDevMode } from '../../config/index.js';
+import {
+  getMemoryCacheClient,
+  initMemoryCacheClient,
+  disconnectMemoryCache,
+  type MemoryCacheClient,
+} from './memory-client.js';
 
 type RedisClient = ReturnType<typeof createClient>;
+type CacheClient = RedisClient | MemoryCacheClient;
+
 let redisClient: RedisClient | null = null;
 let isConnecting = false;
 
 /**
- * Get Redis client instance (singleton pattern)
+ * Get cache client instance (singleton pattern)
+ * Returns Redis client in production, memory client in local dev mode
  * Connects lazily on first access
  */
-export async function getRedisClient(): Promise<RedisClient> {
+export async function getRedisClient(): Promise<CacheClient> {
+  // Use in-memory client for local dev mode
+  if (isLocalDevMode) {
+    return initMemoryCacheClient();
+  }
+
   if (redisClient && redisClient.isOpen) {
     return redisClient;
   }
@@ -79,9 +94,14 @@ export async function getRedisClient(): Promise<RedisClient> {
 }
 
 /**
- * Disconnect Redis client (for graceful shutdown)
+ * Disconnect cache client (for graceful shutdown)
  */
 export async function disconnectRedis(): Promise<void> {
+  if (isLocalDevMode) {
+    await disconnectMemoryCache();
+    return;
+  }
+
   if (redisClient && redisClient.isOpen) {
     await redisClient.quit();
     redisClient = null;
@@ -90,14 +110,18 @@ export async function disconnectRedis(): Promise<void> {
 }
 
 /**
- * Check if Redis is connected
+ * Check if cache is connected
  */
 export function isRedisConnected(): boolean {
+  if (isLocalDevMode) {
+    const memClient = getMemoryCacheClient();
+    return memClient.isOpen;
+  }
   return redisClient !== null && redisClient.isOpen;
 }
 
 /**
- * Ping Redis to check connection health
+ * Ping cache to check connection health
  */
 export async function pingRedis(): Promise<boolean> {
   try {
@@ -105,7 +129,9 @@ export async function pingRedis(): Promise<boolean> {
     const result = await client.ping();
     return result === 'PONG';
   } catch (error) {
-    console.error('Redis ping failed:', error);
+    console.error('Cache ping failed:', error);
     return false;
   }
 }
+
+export type { CacheClient };

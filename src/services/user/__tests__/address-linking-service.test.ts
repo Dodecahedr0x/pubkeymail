@@ -8,6 +8,10 @@ import { AddressLinkingService } from '../address-linking-service.js';
 import { db, withTransaction } from '../../../database/connection.js';
 import { tierService } from '../../tier/tier-service.js';
 import { getBlockchainProvider } from '../../blockchain/provider-factory.js';
+import {
+  mockQueryResult,
+  mockMutationResult,
+} from '../../../test-utils/mock-query-result.js';
 
 vi.mock('../../../database/connection.js', () => {
   const mockClient = {
@@ -34,14 +38,7 @@ vi.mock('../../blockchain/provider-factory.js', () => ({
   getBlockchainProvider: vi.fn(),
 }));
 
-const getMockClient = () => {
-  const mockWithTransaction = vi.mocked(withTransaction);
-  const mockCallback = mockWithTransaction.mock.calls[0]?.[0];
-  if (mockCallback) {
-    return (mockCallback as unknown as { mock: { calls: unknown[][] } }).mock?.calls[0]?.[0];
-  }
-  return null;
-};
+
 
 describe('AddressLinkingService', () => {
   let service: AddressLinkingService;
@@ -86,15 +83,15 @@ describe('AddressLinkingService', () => {
 
       // Not a primary address
       mockClientQuery
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce(mockQueryResult([]))
         // Not already linked
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce(mockQueryResult([]))
         // Insert blockchain_address (ON CONFLICT returns the id)
-        .mockResolvedValueOnce({ rows: [{ id: 10 }] })
+        .mockResolvedValueOnce(mockQueryResult([{ id: 10 }]))
         // Create address_link
-        .mockResolvedValueOnce({
-          rows: [{ id: 1, verified_at: new Date('2024-01-15') }],
-        });
+        .mockResolvedValueOnce(
+          mockQueryResult([{ id: 1, verified_at: new Date('2024-01-15') }])
+        );
 
       const result = await service.linkAddress(validInput);
 
@@ -159,7 +156,7 @@ describe('AddressLinkingService', () => {
       });
 
       // Address is already a primary address
-      mockClientQuery.mockResolvedValueOnce({ rows: [{ id: 5 }] });
+      mockClientQuery.mockResolvedValueOnce(mockQueryResult([{ id: 5 }]));
 
       const result = await service.linkAddress(validInput);
 
@@ -186,9 +183,9 @@ describe('AddressLinkingService', () => {
 
       // Not a primary address
       mockClientQuery
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce(mockQueryResult([]))
         // Already linked to another user
-        .mockResolvedValueOnce({ rows: [{ user_id: 999 }] });
+        .mockResolvedValueOnce(mockQueryResult([{ user_id: 999 }]));
 
       const result = await service.linkAddress(validInput);
 
@@ -215,15 +212,15 @@ describe('AddressLinkingService', () => {
 
       // Not a primary address
       mockClientQuery
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce(mockQueryResult([]))
         // Not already linked
-        .mockResolvedValueOnce({ rows: [] })
+        .mockResolvedValueOnce(mockQueryResult([]))
         // Address already exists (ON CONFLICT returns existing id)
-        .mockResolvedValueOnce({ rows: [{ id: 25 }] })
+        .mockResolvedValueOnce(mockQueryResult([{ id: 25 }]))
         // Create address_link
-        .mockResolvedValueOnce({
-          rows: [{ id: 2, verified_at: new Date('2024-01-20') }],
-        });
+        .mockResolvedValueOnce(
+          mockQueryResult([{ id: 2, verified_at: new Date('2024-01-20') }])
+        );
 
       const result = await service.linkAddress(validInput);
 
@@ -234,7 +231,7 @@ describe('AddressLinkingService', () => {
 
   describe('unlinkAddress', () => {
     it('should unlink address successfully', async () => {
-      vi.mocked(db.query).mockResolvedValue({ rowCount: 1 });
+      vi.mocked(db.query).mockResolvedValue(mockMutationResult(1));
 
       const result = await service.unlinkAddress(1, 10);
 
@@ -246,7 +243,7 @@ describe('AddressLinkingService', () => {
     });
 
     it('should return error when address link not found', async () => {
-      vi.mocked(db.query).mockResolvedValue({ rowCount: 0 });
+      vi.mocked(db.query).mockResolvedValue(mockMutationResult(0));
 
       const result = await service.unlinkAddress(1, 999);
 
@@ -283,7 +280,7 @@ describe('AddressLinkingService', () => {
         },
       ];
 
-      vi.mocked(db.query).mockResolvedValue({ rows: mockAddresses });
+      vi.mocked(db.query).mockResolvedValue(mockQueryResult(mockAddresses));
 
       const result = await service.getLinkedAddresses(1);
 
@@ -304,7 +301,7 @@ describe('AddressLinkingService', () => {
     });
 
     it('should return empty array when no linked addresses', async () => {
-      vi.mocked(db.query).mockResolvedValue({ rows: [] });
+      vi.mocked(db.query).mockResolvedValue(mockQueryResult([]));
 
       const result = await service.getLinkedAddresses(1);
 
@@ -326,14 +323,14 @@ describe('AddressLinkingService', () => {
     it('should return emails from all addresses with total count', async () => {
       // Get address IDs
       vi.mocked(db.query)
-        .mockResolvedValueOnce({
-          rows: [{ address_id: 10 }, { address_id: 20 }],
-        })
+        .mockResolvedValueOnce(
+          mockQueryResult([{ address_id: 10 }, { address_id: 20 }])
+        )
         // Get total count
-        .mockResolvedValueOnce({ rows: [{ count: '100' }] })
+        .mockResolvedValueOnce(mockQueryResult([{ count: '100' }]))
         // Get emails
-        .mockResolvedValueOnce({
-          rows: [
+        .mockResolvedValueOnce(
+          mockQueryResult([
             {
               id: 'email-1',
               sender_email: 'sender@example.com',
@@ -350,8 +347,8 @@ describe('AddressLinkingService', () => {
               address: 'SolanaAddress2',
               read: true,
             },
-          ],
-        });
+          ])
+        );
 
       const result = await service.getUnifiedMailbox(1, 50, 0);
 
@@ -375,7 +372,7 @@ describe('AddressLinkingService', () => {
     });
 
     it('should return error when user not found', async () => {
-      vi.mocked(db.query).mockResolvedValueOnce({ rows: [] });
+      vi.mocked(db.query).mockResolvedValueOnce(mockQueryResult([]));
 
       const result = await service.getUnifiedMailbox(999);
 
@@ -385,9 +382,9 @@ describe('AddressLinkingService', () => {
 
     it('should apply pagination correctly', async () => {
       vi.mocked(db.query)
-        .mockResolvedValueOnce({ rows: [{ address_id: 10 }] })
-        .mockResolvedValueOnce({ rows: [{ count: '200' }] })
-        .mockResolvedValueOnce({ rows: [] });
+        .mockResolvedValueOnce(mockQueryResult([{ address_id: 10 }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '200' }]))
+        .mockResolvedValueOnce(mockQueryResult([]));
 
       await service.getUnifiedMailbox(1, 25, 50);
 
@@ -398,9 +395,9 @@ describe('AddressLinkingService', () => {
 
     it('should return empty mailbox for user with no emails', async () => {
       vi.mocked(db.query)
-        .mockResolvedValueOnce({ rows: [{ address_id: 10 }] })
-        .mockResolvedValueOnce({ rows: [{ count: '0' }] })
-        .mockResolvedValueOnce({ rows: [] });
+        .mockResolvedValueOnce(mockQueryResult([{ address_id: 10 }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]))
+        .mockResolvedValueOnce(mockQueryResult([]));
 
       const result = await service.getUnifiedMailbox(1);
 
@@ -420,14 +417,14 @@ describe('AddressLinkingService', () => {
 
     it('should include primary address in unified mailbox', async () => {
       vi.mocked(db.query)
-        .mockResolvedValueOnce({
-          rows: [
+        .mockResolvedValueOnce(
+          mockQueryResult([
             { address_id: 1 }, // primary
             { address_id: 2 }, // linked
-          ],
-        })
-        .mockResolvedValueOnce({ rows: [{ count: '50' }] })
-        .mockResolvedValueOnce({ rows: [] });
+          ])
+        )
+        .mockResolvedValueOnce(mockQueryResult([{ count: '50' }]))
+        .mockResolvedValueOnce(mockQueryResult([]));
 
       await service.getUnifiedMailbox(1);
 

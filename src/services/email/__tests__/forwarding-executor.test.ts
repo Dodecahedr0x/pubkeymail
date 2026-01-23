@@ -9,6 +9,7 @@ import {
   type IncomingEmailData,
 } from '../forwarding-executor.js';
 import type { ForwardingRule, FilterConditions } from '../forwarding-service.js';
+import { mockQueryResult } from '../../../test-utils/mock-query-result.js';
 
 // Mock database
 vi.mock('../../../database/connection.js', () => ({
@@ -87,13 +88,9 @@ describe('ForwardingExecutor', () => {
       const rule = createMockRule();
       mockGetActiveRulesForAddress.mockResolvedValue([rule]);
       mockMatchesFilter.mockReturnValue(true);
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ address: 'recipient@pubkeymail.com' }],
-        rowCount: 1,
-        command: 'SELECT',
-        oid: 0,
-        fields: [],
-      });
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([{ address: 'recipient@pubkeymail.com' }])
+      );
 
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const email = createMockEmail();
@@ -157,20 +154,12 @@ describe('ForwardingExecutor', () => {
         .mockReturnValueOnce(true);
 
       mockQuery
-        .mockResolvedValueOnce({
-          rows: [{ address: 'recipient@pubkeymail.com' }],
-          rowCount: 1,
-          command: 'SELECT',
-          oid: 0,
-          fields: [],
-        })
-        .mockResolvedValueOnce({
-          rows: [{ address: 'recipient@pubkeymail.com' }],
-          rowCount: 1,
-          command: 'SELECT',
-          oid: 0,
-          fields: [],
-        });
+        .mockResolvedValueOnce(
+          mockQueryResult([{ address: 'recipient@pubkeymail.com' }])
+        )
+        .mockResolvedValueOnce(
+          mockQueryResult([{ address: 'recipient@pubkeymail.com' }])
+        );
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
       const email = createMockEmail({ subject: 'Regular Email' });
@@ -188,13 +177,7 @@ describe('ForwardingExecutor', () => {
       const rule = createMockRule();
       mockGetActiveRulesForAddress.mockResolvedValue([rule]);
       mockMatchesFilter.mockReturnValue(true);
-      mockQuery.mockResolvedValueOnce({
-        rows: [],
-        rowCount: 0,
-        command: 'SELECT',
-        oid: 0,
-        fields: [],
-      });
+      mockQuery.mockResolvedValueOnce(mockQueryResult([]));
 
       const email = createMockEmail();
       const result = await executor.processIncomingEmail(email);
@@ -240,27 +223,13 @@ describe('ForwardingExecutor', () => {
       mockMatchesFilter.mockReturnValue(true);
 
       mockQuery
-        .mockResolvedValueOnce({
-          rows: [{ address: 'addr1@pubkeymail.com' }],
-          rowCount: 1,
-          command: 'SELECT',
-          oid: 0,
-          fields: [],
-        })
-        .mockResolvedValueOnce({
-          rows: [],
-          rowCount: 0,
-          command: 'SELECT',
-          oid: 0,
-          fields: [],
-        })
-        .mockResolvedValueOnce({
-          rows: [{ address: 'addr1@pubkeymail.com' }],
-          rowCount: 1,
-          command: 'SELECT',
-          oid: 0,
-          fields: [],
-        });
+        .mockResolvedValueOnce(
+          mockQueryResult([{ address: 'addr1@pubkeymail.com' }])
+        )
+        .mockResolvedValueOnce(mockQueryResult([]))
+        .mockResolvedValueOnce(
+          mockQueryResult([{ address: 'addr1@pubkeymail.com' }])
+        );
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
       const email = createMockEmail();
@@ -279,13 +248,9 @@ describe('ForwardingExecutor', () => {
       const rule = createMockRule();
       mockGetActiveRulesForAddress.mockResolvedValue([rule]);
       mockMatchesFilter.mockReturnValue(true);
-      mockQuery.mockResolvedValueOnce({
-        rows: [{ address: 'recipient@pubkeymail.com' }],
-        rowCount: 1,
-        command: 'SELECT',
-        oid: 0,
-        fields: [],
-      });
+      mockQuery.mockResolvedValueOnce(
+        mockQueryResult([{ address: 'recipient@pubkeymail.com' }])
+      );
 
       vi.spyOn(console, 'log').mockImplementation(() => {});
       const email = createMockEmail({

@@ -21,14 +21,23 @@ const envSchema = z.object({
   DOMAIN: z.string().min(1),
   API_VERSION: z.string().default('v1'),
 
+  // Local Development Mode
+  // When true, uses in-memory storage instead of PostgreSQL and Redis
+  USE_LOCAL_DEV: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
+
   // Database - CRITICAL: Must use case-sensitive collation
-  DATABASE_URL: z.string().url(),
+  // Optional when USE_LOCAL_DEV is true
+  DATABASE_URL: z.string().url().optional(),
   DATABASE_POOL_SIZE: z.coerce.number().positive().default(20),
   DATABASE_POOL_IDLE_TIMEOUT: z.coerce.number().positive().default(30000),
   DATABASE_CONNECTION_TIMEOUT: z.coerce.number().positive().default(10000),
 
   // Redis
-  REDIS_URL: z.string().url(),
+  // Optional when USE_LOCAL_DEV is true
+  REDIS_URL: z.string().url().optional(),
   REDIS_KEY_PREFIX: z.string().default('pubkeymail:'),
   REDIS_DEFAULT_TTL: z.coerce.number().positive().default(3600),
 
@@ -149,7 +158,19 @@ const envSchema = z.object({
  */
 const parseConfig = (): z.infer<typeof envSchema> => {
   try {
-    return envSchema.parse(process.env);
+    const parsed = envSchema.parse(process.env);
+
+    // Validate that DATABASE_URL and REDIS_URL are present when not in local dev mode
+    if (!parsed.USE_LOCAL_DEV) {
+      if (!parsed.DATABASE_URL) {
+        throw new Error('DATABASE_URL is required when USE_LOCAL_DEV is not true');
+      }
+      if (!parsed.REDIS_URL) {
+        throw new Error('REDIS_URL is required when USE_LOCAL_DEV is not true');
+      }
+    }
+
+    return parsed;
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars = error.issues.map((e) => `${e.path.join('.')}: ${e.message}`);
@@ -166,17 +187,19 @@ export const config = parseConfig();
 
 // Export derived configuration objects
 export const databaseConfig = {
-  url: config.DATABASE_URL,
+  url: config.DATABASE_URL || '',
   poolSize: config.DATABASE_POOL_SIZE,
   idleTimeout: config.DATABASE_POOL_IDLE_TIMEOUT,
   connectionTimeout: config.DATABASE_CONNECTION_TIMEOUT,
 };
 
 export const redisConfig = {
-  url: config.REDIS_URL,
+  url: config.REDIS_URL || '',
   keyPrefix: config.REDIS_KEY_PREFIX,
   defaultTTL: config.REDIS_DEFAULT_TTL,
 };
+
+export const isLocalDevMode = config.USE_LOCAL_DEV;
 
 export const solanaConfig = {
   rpcEndpoint: config.SOLANA_RPC_ENDPOINT,

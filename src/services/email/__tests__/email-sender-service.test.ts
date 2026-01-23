@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EmailSenderService } from '../email-sender-service.js';
+import { mockQueryResult } from '../../../test-utils/mock-query-result.js';
 
 // Mock database
 vi.mock('../../../database/connection.js', () => ({
@@ -358,12 +359,11 @@ describe('EmailSenderService', () => {
       });
 
       mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ subscription_tier: 'paid' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ count: '10' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ id: 1, address: 'GNa9E2dWPgxHePV5hRzMZrJ1RrSzBx9rX3kgYNQGvrch', blockchain: 'solana' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] })
-        .mockResolvedValueOnce({
-          rows: [{
+        .mockResolvedValueOnce(mockQueryResult([{ count: '1' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ subscription_tier: 'paid' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '10' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ id: 1, address: 'GNa9E2dWPgxHePV5hRzMZrJ1RrSzBx9rX3kgYNQGvrch', blockchain: 'solana' }]))
+        .mockResolvedValueOnce(mockQueryResult([{
             id: 'email-uuid-456',
             sender_address_id: 1,
             sender_email: 'GNa9E2dWPgxHePV5hRzMZrJ1RrSzBx9rX3kgYNQGvrch@pubkeymail.com',
@@ -374,12 +374,7 @@ describe('EmailSenderService', () => {
             sent_at: new Date(),
             smtp_message_id: 'mock_456_def',
             delivery_status: 'sent',
-          }],
-          rowCount: 1,
-          command: 'INSERT',
-          oid: 0,
-          fields: [],
-        });
+          }]));
 
       const result = await emailSenderService.sendEmail(1, {
         fromAddressId: 1,
@@ -422,14 +417,13 @@ describe('EmailSenderService', () => {
 
       mockQuery
         // Address ownership check - primary check (not primary, returns 0)
-        .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] })
+        .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]))
         // Address ownership check - linked check (is linked, returns 1)
-        .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ subscription_tier: 'paid' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ count: '5' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ id: 2, address: 'LinkedAddress123456789012345678901234567890123', blockchain: 'solana' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] })
-        .mockResolvedValueOnce({
-          rows: [{
+        .mockResolvedValueOnce(mockQueryResult([{ count: '1' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ subscription_tier: 'paid' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '5' }]))
+        .mockResolvedValueOnce(mockQueryResult([{ id: 2, address: 'LinkedAddress123456789012345678901234567890123', blockchain: 'solana' }]))
+        .mockResolvedValueOnce(mockQueryResult([{
             id: 'email-uuid-789',
             sender_address_id: 2,
             sender_email: 'LinkedAddress123456789012345678901234567890123@pubkeymail.com',
@@ -440,12 +434,7 @@ describe('EmailSenderService', () => {
             sent_at: new Date(),
             smtp_message_id: 'mock_789_ghi',
             delivery_status: 'sent',
-          }],
-          rowCount: 1,
-          command: 'INSERT',
-          oid: 0,
-          fields: [],
-        });
+          }]));
 
       const result = await emailSenderService.sendEmail(1, {
         fromAddressId: 2,
@@ -480,8 +469,8 @@ describe('EmailSenderService', () => {
       });
 
       mockQuery
-        .mockResolvedValueOnce({ rows: [], rowCount: 0, command: 'SELECT', oid: 0, fields: [] })
-        .mockResolvedValueOnce({ rows: [{ count: '0' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] });
+        .mockResolvedValueOnce(mockQueryResult([]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '0' }]));
 
       const result = await emailSenderService.getSentEmails(1);
 
@@ -510,8 +499,7 @@ describe('EmailSenderService', () => {
       });
 
       mockQuery
-        .mockResolvedValueOnce({
-          rows: [
+        .mockResolvedValueOnce(mockQueryResult([
             {
               id: 'email-1',
               sender_address_id: 1,
@@ -536,13 +524,8 @@ describe('EmailSenderService', () => {
               smtp_message_id: 'msg-2',
               delivery_status: 'sent',
             },
-          ],
-          rowCount: 2,
-          command: 'SELECT',
-          oid: 0,
-          fields: [],
-        })
-        .mockResolvedValueOnce({ rows: [{ count: '5' }], rowCount: 1, command: 'SELECT', oid: 0, fields: [] });
+          ]))
+        .mockResolvedValueOnce(mockQueryResult([{ count: '5' }]));
 
       const result = await emailSenderService.getSentEmails(1, 2, 0);
 

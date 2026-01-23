@@ -31,7 +31,7 @@ export interface SendGridWebhook {
   html?: string;
   headers?: string; // JSON string
   attachments?: string; // JSON string or number of attachments
-  [key: string]: any;
+  [key: string]: string | undefined;
 }
 
 /**
@@ -51,7 +51,7 @@ export interface PostmarkWebhook {
     ContentType: string;
     ContentLength: number;
   }>;
-  [key: string]: any;
+  [key: string]: string | Array<{ Name: string; Value: string }> | Array<{ Name: string; Content: string; ContentType: string; ContentLength: number }> | undefined;
 }
 
 /**
@@ -65,8 +65,8 @@ export interface MailgunWebhook {
   'body-plain'?: string;
   'body-html'?: string;
   'message-headers'?: string; // JSON string
-  attachments?: any[];
-  [key: string]: any;
+  attachments?: Array<{ filename?: string; 'content-type'?: string; size?: number; content?: string }>;
+  [key: string]: string | Array<{ filename?: string; 'content-type'?: string; size?: number; content?: string }> | undefined;
 }
 
 /**
@@ -99,7 +99,7 @@ export function parseSendGridWebhook(payload: SendGridWebhook): ParsedWebhookEma
 
       if (Array.isArray(attachmentData)) {
         attachments.push(
-          ...attachmentData.map((att: any) => ({
+          ...attachmentData.map((att: { filename?: string; type?: string; content?: string }) => ({
             filename: att.filename || 'attachment',
             contentType: att.type || 'application/octet-stream',
             size: att.content?.length || 0,
@@ -188,7 +188,7 @@ export function parseMailgunWebhook(payload: MailgunWebhook): ParsedWebhookEmail
   const attachments: EmailAttachment[] = [];
   if (payload.attachments && Array.isArray(payload.attachments)) {
     attachments.push(
-      ...payload.attachments.map((att: any) => ({
+      ...payload.attachments.map((att) => ({
         filename: att.filename || 'attachment',
         contentType: att['content-type'] || 'application/octet-stream',
         size: att.size || 0,
@@ -216,34 +216,52 @@ export function parseMailgunWebhook(payload: MailgunWebhook): ParsedWebhookEmail
  * @param provider - SMTP provider (optional, will auto-detect if not provided)
  * @returns Parsed email data
  */
+function isSendGridWebhook(payload: unknown): payload is SendGridWebhook {
+  const p = payload as SendGridWebhook;
+  return typeof p.to === 'string' && typeof p.from === 'string';
+}
+
+function isPostmarkWebhook(payload: unknown): payload is PostmarkWebhook {
+  const p = payload as PostmarkWebhook;
+  return typeof p.To === 'string' && typeof p.From === 'string';
+}
+
+function isMailgunWebhook(payload: unknown): payload is MailgunWebhook {
+  const p = payload as MailgunWebhook;
+  return typeof p.recipient === 'string' && typeof p.sender === 'string';
+}
+
 export function parseWebhookEmail(
-  payload: any,
+  payload: SendGridWebhook | PostmarkWebhook | MailgunWebhook,
   provider?: 'sendgrid' | 'postmark' | 'mailgun'
 ): ParsedWebhookEmail {
   // If provider specified, use that parser
   if (provider === 'sendgrid') {
-    return parseSendGridWebhook(payload);
+    return parseSendGridWebhook(payload as SendGridWebhook);
   }
   if (provider === 'postmark') {
-    return parsePostmarkWebhook(payload);
+    return parsePostmarkWebhook(payload as PostmarkWebhook);
   }
   if (provider === 'mailgun') {
-    return parseMailgunWebhook(payload);
+    return parseMailgunWebhook(payload as MailgunWebhook);
   }
 
   // Auto-detect provider based on payload structure
-  if (payload.To && payload.From && payload.TextBody !== undefined) {
-    // Postmark format (capitalized fields)
+  if (isPostmarkWebhook(payload)) {
     return parsePostmarkWebhook(payload);
   }
 
-  if (payload.recipient && payload.sender && payload['body-plain'] !== undefined) {
-    // Mailgun format (kebab-case fields)
+  if (isMailgunWebhook(payload)) {
     return parseMailgunWebhook(payload);
   }
 
   // Default to SendGrid format
-  return parseSendGridWebhook(payload);
+  if (isSendGridWebhook(payload)) {
+    return parseSendGridWebhook(payload);
+  }
+
+  // Fallback - treat as SendGrid
+  return parseSendGridWebhook(payload as SendGridWebhook);
 }
 
 /**
@@ -307,25 +325,64 @@ export function validateEmailData(data: CreateEmailData): string[] {
 
 /**
  * Sanitize email content
- * Removes potentially dangerous HTML/scripts
+ * Removes potentially dangerous HTML/scripts using comprehensive regex patterns
+ *
+ * Security measures:
+ * - Removes <script>, <style>, <iframe>, <object>, <embed>, <form> tags
+ * - Removes all event handlers (onclick, onerror, onload, etc.)
+ * - Neutralizes javascript:, data:, and vbscript: URLs
+ * - Removes dangerous attributes like srcdoc, formaction
+ * - Strips HTML comments that may hide malicious content
+ *
+ * Note: For enhanced security in production, consider adding sanitize-html package
+ * which provides configurable allow-lists for tags and attributes.
  *
  * @param html - HTML content to sanitize
  * @returns Sanitized HTML
  */
 export function sanitizeHtmlContent(html: string): string {
-  // Basic sanitization - remove script tags and event handlers
-  // TODO: Use a proper HTML sanitization library in production (e.g., DOMPurify)
   let sanitized = html;
 
-  // Remove script tags
-  sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+  // Remove dangerous tags entirely (including their content)
+  const dangerousTags = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'link', 'meta', 'base'];
+  for (const tag of dangerousTags) {
+    const tagRegex = new RegExp(`<${tag}\\b[^<]*(?:(?!<\\/${tag}>)<[^<]*)*<\\/${tag}>`, 'gi');
+    sanitized = sanitized.replace(tagRegex, '');
+    // Also remove self-closing variants
+    sanitized = sanitized.replace(new RegExp(`<${tag}\\b[^>]*\\/?>`, 'gi'), '');
+  }
 
-  // Remove event handlers
-  sanitized = sanitized.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
-  sanitized = sanitized.replace(/on\w+\s*=\s*[^\s>]*/gi, '');
+  // Remove all event handlers (on* attributes)
+  sanitized = sanitized.replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '');
+  sanitized = sanitized.replace(/\s+on\w+\s*=\s*[^\s>"']*/gi, '');
 
-  // Remove javascript: URLs
-  sanitized = sanitized.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, 'href="#"');
+  // Remove javascript:, vbscript:, and data: URLs from href/src/action attributes
+  const urlAttrs = ['href', 'src', 'action', 'formaction', 'poster', 'data', 'codebase', 'cite'];
+  for (const attr of urlAttrs) {
+    // Handle quoted values
+    sanitized = sanitized.replace(
+      new RegExp(`${attr}\\s*=\\s*["']\\s*(javascript|vbscript|data):[^"']*["']`, 'gi'),
+      `${attr}="#"`
+    );
+    // Handle unquoted values
+    sanitized = sanitized.replace(
+      new RegExp(`${attr}\\s*=\\s*(javascript|vbscript|data):[^\\s>]*`, 'gi'),
+      `${attr}="#"`
+    );
+  }
+
+  // Remove dangerous attributes
+  const dangerousAttrs = ['srcdoc', 'formaction', 'xlink:href', 'dynsrc', 'lowsrc'];
+  for (const attr of dangerousAttrs) {
+    sanitized = sanitized.replace(new RegExp(`\\s+${attr}\\s*=\\s*["'][^"']*["']`, 'gi'), '');
+    sanitized = sanitized.replace(new RegExp(`\\s+${attr}\\s*=\\s*[^\\s>"']*`, 'gi'), '');
+  }
+
+  // Remove HTML comments (can hide malicious content)
+  sanitized = sanitized.replace(/<!--[\s\S]*?-->/g, '');
+
+  // Remove XML processing instructions
+  sanitized = sanitized.replace(/<\?[\s\S]*?\?>/g, '');
 
   return sanitized;
 }

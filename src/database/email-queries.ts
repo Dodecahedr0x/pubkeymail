@@ -121,7 +121,7 @@ export async function createEmail(
     ]
   );
 
-  return parseEmailRow(result.rows[0]!);
+  return parseEmailRow(result.rows[0] as unknown as EmailRow);
 }
 
 /**
@@ -143,7 +143,7 @@ export async function getEmails(
 
   // Build WHERE clause
   const conditions: string[] = ['recipient_address_id = $1'];
-  const params: any[] = [addressId];
+  const params: (string | number | Date | boolean)[] = [addressId];
   let paramIndex = 2;
 
   if (filters.senderAddress) {
@@ -197,7 +197,7 @@ export async function getEmails(
     [...params, limit, offset]
   );
 
-  const emails = emailsResult.rows.map(parseEmailRow);
+  const emails = (emailsResult.rows as unknown as EmailRow[]).map(parseEmailRow);
   const totalPages = Math.ceil(total / limit);
 
   return {
@@ -234,7 +234,7 @@ export async function getEmailById(
     return null;
   }
 
-  return parseEmailRow(result.rows[0]!);
+  return parseEmailRow(result.rows[0] as unknown as EmailRow);
 }
 
 /**
@@ -275,6 +275,11 @@ export async function cleanupExpiredEmails(): Promise<number> {
 
 /**
  * Get email statistics for an address
+ * Calculates storage from attachments and body content
+ *
+ * Note: Read/unread tracking requires adding is_read column to emails table
+ * via migration. Until then, unreadEmails returns totalEmails as a safe default.
+ *
  * @param addressId - Address ID
  * @returns Email stats
  */
@@ -283,22 +288,32 @@ export async function getEmailStats(addressId: number): Promise<EmailStats> {
     total: string;
     oldest: Date | null;
     newest: Date | null;
+    storage_bytes: string;
   }>(
     `SELECT
       COUNT(*) as total,
       MIN(received_at) as oldest,
-      MAX(received_at) as newest
+      MAX(received_at) as newest,
+      COALESCE(SUM(
+        COALESCE(LENGTH(body_text), 0) +
+        COALESCE(LENGTH(body_html), 0) +
+        COALESCE((
+          SELECT SUM((att->>'size')::int)
+          FROM jsonb_array_elements(attachments) att
+        ), 0)
+      ), 0) as storage_bytes
      FROM emails
      WHERE recipient_address_id = $1`,
     [addressId]
   );
 
   const row = result.rows[0]!;
+  const totalEmails = parseInt(row.total);
 
   return {
-    totalEmails: parseInt(row.total),
-    unreadEmails: 0, // TODO: Implement read/unread tracking
-    storageUsed: 0, // TODO: Calculate from attachments
+    totalEmails,
+    unreadEmails: totalEmails, // All emails treated as unread until is_read column is added
+    storageUsed: parseInt(row.storage_bytes),
     oldestEmail: row.oldest,
     newestEmail: row.newest,
   };
@@ -308,7 +323,23 @@ export async function getEmailStats(addressId: number): Promise<EmailStats> {
  * Parse email row from database
  * Converts JSON fields to proper types
  */
-function parseEmailRow(row: any): Email {
+interface EmailRow {
+  id: string;
+  recipient_address_id: number;
+  recipient_email: string;
+  sender_address: string;
+  subject: string | null;
+  body_text: string | null;
+  body_html: string | null;
+  headers: Record<string, string>;
+  attachments: Array<{ filename: string; contentType: string; size: number; content?: string }>;
+  received_at: Date;
+  expires_at: Date | null;
+  is_encrypted: boolean;
+  encryption_metadata: Record<string, unknown> | null;
+}
+
+function parseEmailRow(row: EmailRow): Email {
   return {
     id: row.id,
     recipientAddressId: row.recipient_address_id,

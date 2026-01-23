@@ -33,7 +33,7 @@ export interface CleanupResult {
     totalExpired: number;
     batchesProcessed: number;
     addressesAffected: number;
-    errors: Array<{ message: string; context?: any }>;
+    errors: Array<{ message: string; context?: Record<string, unknown> }>;
   };
 }
 
@@ -255,7 +255,7 @@ export class EmailCleanupService {
     try {
       // Build WHERE clause
       const conditions = ['expires_at IS NOT NULL', 'expires_at < NOW()'];
-      const params: any[] = [];
+      const params: Date[] = [];
 
       if (beforeDate) {
         params.push(beforeDate);

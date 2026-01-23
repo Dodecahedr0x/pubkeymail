@@ -6,7 +6,7 @@
  */
 
 import express, { Application, Request, Response, NextFunction } from 'express';
-import { config } from './config/index.js';
+import { config, isLocalDevMode } from './config/index.js';
 import { emailCleanupScheduler } from './services/email/cleanup-scheduler.js';
 
 // Import routes
@@ -164,13 +164,16 @@ async function startServer(): Promise<void> {
 
   // Start HTTP server
   const server = app.listen(port, () => {
+    const modeInfo = isLocalDevMode
+      ? '🧪 LOCAL DEV (in-memory)'
+      : config.NODE_ENV;
     console.log(`
 ╔═══════════════════════════════════════════════════════════════╗
 ║                       PubKeyMail API                          ║
 ╠═══════════════════════════════════════════════════════════════╣
 ║  Status:    Running                                           ║
 ║  Port:      ${port.toString().padEnd(50)}║
-║  Env:       ${config.NODE_ENV.padEnd(50)}║
+║  Mode:      ${modeInfo.padEnd(50)}║
 ║  API:       http://localhost:${port}/api/${config.API_VERSION.padEnd(32)}║
 ║  Health:    http://localhost:${port}/health${''.padEnd(27)}║
 ╚═══════════════════════════════════════════════════════════════╝

@@ -70,8 +70,10 @@ export interface AuthVerificationResult {
 }
 
 /**
- * In-memory nonce store (for development)
- * TODO: Replace with Redis implementation in production
+ * In-memory nonce store
+ * Used for development and testing. In production deployments with multiple
+ * instances, implement INonceStore with Redis or database-backed storage
+ * to ensure nonces are shared across all instances.
  */
 class MemoryNonceStore implements INonceStore {
   private nonces: Map<string, AuthNonce> = new Map();

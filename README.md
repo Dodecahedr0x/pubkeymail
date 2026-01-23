@@ -101,6 +101,27 @@ docker-compose up -d
 pnpm dev
 ```
 
+### Local Development Mode (No External Dependencies)
+
+For quick local development without PostgreSQL or Redis:
+
+```bash
+# Start with in-memory storage
+pnpm dev:local
+```
+
+This mode:
+- Uses **in-memory storage** instead of PostgreSQL and Redis
+- Requires **no Docker** or external services
+- Data is **lost on restart** (development only)
+- All authentication, caching, and database operations work normally
+
+Perfect for:
+- Quick prototyping
+- Testing API endpoints
+- Frontend development
+- CI environments without database access
+
 ### Environment Variables
 
 ```env
@@ -134,6 +155,7 @@ SESSION_DURATION=86400
 ```bash
 # Development
 pnpm dev              # Start dev server with hot reload
+pnpm dev:local        # Start with in-memory storage (no Docker needed)
 pnpm build            # Build for production
 pnpm start            # Run production build
 

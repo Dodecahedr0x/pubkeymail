@@ -276,8 +276,7 @@ describe('EmailCleanupScheduler', () => {
       await scheduler.runManualCleanup(false);
 
       // Manually backdate the lastRun to simulate old run
-      const state = scheduler.getState();
-      (scheduler as any).state.lastRun = new Date(Date.now() - 26 * 60 * 60 * 1000);
+      (scheduler as unknown as { state: { lastRun: Date } }).state.lastRun = new Date(Date.now() - 26 * 60 * 60 * 1000);
 
       const healthy = scheduler.isHealthy(25); // Max 25 hours
 

@@ -3,6 +3,7 @@
  */
 
 export * from './redis-client.js';
+export * from './memory-client.js';
 export * from './nonce-store.js';
 export * from './redis-nonce-store.js';
 export * from './sns-cache.js';
