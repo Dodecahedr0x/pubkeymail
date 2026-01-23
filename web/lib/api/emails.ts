@@ -62,3 +62,10 @@ export async function getFromAddresses(userId: number) {
     `/emails/from-addresses?userId=${userId}`
   );
 }
+
+export async function deleteEmail(emailId: string) {
+  return apiRequest<{ success: boolean }>(
+    `/emails/${emailId}`,
+    { method: 'DELETE' }
+  );
+}

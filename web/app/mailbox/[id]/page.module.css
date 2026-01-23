@@ -92,6 +92,15 @@
   color: var(--text-primary);
 }
 
+.deleteError {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius);
+  margin-bottom: var(--spacing-md);
+}
+
 @media (max-width: 600px) {
   .toolbar {
     flex-direction: column;

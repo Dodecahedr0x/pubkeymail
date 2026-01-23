@@ -12,14 +12,27 @@ const navItems = [
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout } = useAuth();
   
   const isPaid = user?.subscriptionTier === 'paid';
+
+  const handleNavClick = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
   
   return (
-    <aside className={styles.sidebar}>
+    <>
+      {isOpen && <div className={styles.overlay} onClick={onClose} />}
+      <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
       <div className={styles.logo}>
         <Link href="/">
           <span>📬</span> PubKeyMail
@@ -37,6 +50,7 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+              onClick={handleNavClick}
             >
               <span className={styles.icon}>{item.icon}</span>
               {item.label}
@@ -65,6 +79,7 @@ export function Sidebar() {
           </>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import * as emailsApi from '@/lib/api/emails';
 import type { Email } from '@/lib/api/emails';
+import { ConfirmModal } from '@/components/ConfirmModal';
 import styles from './page.module.css';
 
 export default function EmailDetailPage() {
@@ -15,6 +16,9 @@ export default function EmailDetailPage() {
   const [email, setEmail] = useState<Email | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   
   useEffect(() => {
     async function fetchEmail() {
@@ -49,6 +53,34 @@ export default function EmailDetailPage() {
       minute: '2-digit',
     });
   };
+
+  const handleDeleteClick = () => {
+    setDeleteError(null);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const result = await emailsApi.deleteEmail(emailId);
+
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+
+      router.push('/mailbox');
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete email');
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setDeleteError(null);
+  };
   
   if (loading) {
     return (
@@ -80,9 +112,17 @@ export default function EmailDetailPage() {
         <div className={styles.actions}>
           <button className="btn btn-secondary">Reply</button>
           <button className="btn btn-secondary">Forward</button>
-          <button className="btn btn-danger">Delete</button>
+          <button className="btn btn-danger" onClick={handleDeleteClick}>
+            Delete
+          </button>
         </div>
       </div>
+
+      {deleteError && (
+        <div className={styles.deleteError}>
+          {deleteError}
+        </div>
+      )}
       
       <div className={styles.emailContent}>
         <header className={styles.header}>
@@ -112,6 +152,17 @@ export default function EmailDetailPage() {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={showDeleteModal}
+        title="Delete Email"
+        message="Are you sure you want to delete this email? This action cannot be undone."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        loading={deleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+      />
     </div>
   );
 }

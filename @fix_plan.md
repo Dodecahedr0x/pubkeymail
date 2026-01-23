@@ -246,8 +246,8 @@
 - [x] Implement email detail view
 - [x] Add loading states and skeletons
 - [x] Create empty state for new mailboxes
-- [ ] Implement email deletion with confirmation
-- [ ] Add pull-to-refresh / auto-refresh
+- [x] Implement email deletion with confirmation
+- [x] Add pull-to-refresh / auto-refresh
 
 ### Email Composition (Paid Tier)
 - [x] Create email compose modal/page
@@ -269,7 +269,7 @@
 ### Responsive Design
 - [x] Mobile-first responsive layout
 - [ ] Touch-friendly interactions
-- [ ] Mobile navigation (hamburger menu)
+- [x] Mobile navigation (hamburger menu)
 - [x] Optimize for tablet viewports
 
 ### Accessibility & UX
@@ -277,7 +277,7 @@
 - [ ] Screen reader compatibility (ARIA)
 - [ ] Focus management
 - [x] Loading and error states
-- [ ] Toast notifications
+- [x] Toast notifications
 - [x] Dark mode support (built-in dark theme)
 
 ## Completed
@@ -290,6 +290,11 @@
 - [x] Redis-backed nonce storage for authentication
 
 ## Recent Completions
+- ✅ Web app mailbox improvements:
+  - Email deletion with confirmation modal
+  - Auto-refresh polling with new email badge
+  - Toast notification system
+  - Mobile hamburger menu navigation
 - ✅ Payment Service with Stripe and Solana Pay integration
 - ✅ Payment API routes (checkout, webhooks, verify, cancel)
 - ✅ Health check endpoints (/health, /health/ready, /health/live)

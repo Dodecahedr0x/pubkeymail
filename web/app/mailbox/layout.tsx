@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/providers';
 import { Sidebar } from '@/components/Sidebar';
+import { MobileHeader } from '@/components/MobileHeader';
 import styles from './layout.module.css';
 
 export default function MailboxLayout({
@@ -13,6 +14,10 @@ export default function MailboxLayout({
 }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const closeSidebar = () => setIsSidebarOpen(false);
   
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -35,7 +40,8 @@ export default function MailboxLayout({
   
   return (
     <div className={styles.layout}>
-      <Sidebar />
+      <MobileHeader isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+      <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
       <main className={styles.content}>
         {children}
       </main>

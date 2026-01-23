@@ -99,33 +99,51 @@
   color: var(--text-primary);
 }
 
+.overlay {
+  display: none;
+}
+
 @media (max-width: 768px) {
+  .overlay {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+  }
+
   .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    flex-direction: row;
-    flex-wrap: wrap;
+    width: 280px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    z-index: 999;
+    flex-direction: column;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
   }
   
   .logo {
-    flex: 1;
-    border-bottom: none;
-    border-right: 1px solid var(--border-color);
+    display: none;
   }
   
   .nav {
-    flex-direction: row;
-    order: 3;
-    width: 100%;
-    border-top: 1px solid var(--border-color);
+    flex-direction: column;
+    padding-top: calc(60px + var(--spacing-md));
   }
   
   .userSection {
-    border-top: none;
-    border-left: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
+    border-top: 1px solid var(--border-color);
+    border-left: none;
+    display: block;
+    margin-top: auto;
   }
 }
