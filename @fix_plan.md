@@ -111,11 +111,11 @@
 - [x] Setup SMTP provider for outbound (SendGrid API/Postmark)
 - [x] Implement email composition API
 - [x] Create "From" address selector
-- [ ] Build recipient verification system
+- [x] Build recipient verification system
 - [x] Add email sending rate limiting
 - [x] Implement sent email storage
 - [x] Add delivery status tracking
-- [ ] Write email sending tests
+- [x] Write email sending tests
 
 ### SPF/DKIM/DMARC Setup
 - [ ] Configure DNS records for email domain
@@ -318,6 +318,8 @@
 - ✅ Tier Service with feature gating and grace periods
 - ✅ Tier middleware for API route protection
 - ✅ Tier service tests (33 tests)
+- ✅ Email sender service tests (13 tests)
+- ✅ Recipient verification service with internal/external handling
 
 ## Next Priority Tasks
 

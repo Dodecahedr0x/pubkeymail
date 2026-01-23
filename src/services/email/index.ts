@@ -35,3 +35,10 @@ export {
   type DeliveryStatus,
   type RateLimitResult,
 } from './email-sender-service.js';
+
+export {
+  RecipientVerificationService,
+  recipientVerificationService,
+  type RecipientVerificationResult,
+  type MultipleRecipientVerificationResult,
+} from './recipient-verification.js';
