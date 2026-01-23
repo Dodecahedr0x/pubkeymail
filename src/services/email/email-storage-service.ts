@@ -161,8 +161,8 @@ export class EmailStorageService {
     // Trigger forwarding asynchronously (don't block email storage)
     forwardingExecutor
       .processIncomingEmail({
-        recipientAddressId: email.addressId,
-        from: data.from,
+        recipientAddressId: email.recipientAddressId,
+        from: data.senderAddress,
         subject: data.subject || '',
         bodyText: data.bodyText,
         bodyHtml: data.bodyHtml,
@@ -170,7 +170,7 @@ export class EmailStorageService {
       .catch((error) => {
         console.error('[EmailStorageService] Failed to process forwarding rules:', {
           emailId: email.id,
-          addressId: email.addressId,
+          addressId: email.recipientAddressId,
           error: error instanceof Error ? error.message : String(error),
         });
       });

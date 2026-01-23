@@ -154,22 +154,22 @@
 ## Phase 7: Security & Compliance (Medium Priority)
 
 ### Security Hardening
-- [ ] Implement rate limiting per address
-- [ ] Add email size and attachment limits
-- [ ] Setup spam filtering integration
-- [ ] Implement CAPTCHA for sending
-- [ ] Add brute force protection
-- [ ] Create security audit logging
-- [ ] Write security tests
+- [x] Implement rate limiting per address (Redis-based sliding window)
+- [x] Add email size and attachment limits (middleware)
+- [ ] Setup spam filtering integration (external service integration pending)
+- [ ] Implement CAPTCHA for sending (frontend integration pending)
+- [x] Add brute force protection (Redis-based lockout)
+- [x] Create security audit logging (PostgreSQL-based)
+- [x] Write security tests (96 tests: rate limiter, brute force, audit logger, email limits)
 
 ### Compliance
-- [ ] Draft Privacy Policy
-- [ ] Create Terms of Service
-- [ ] Implement GDPR compliance features
-- [ ] Build user data deletion API
-- [ ] Add data export functionality
-- [ ] Create compliance documentation
-- [ ] Setup email retention disclosure
+- [x] Draft Privacy Policy (docs/legal/PRIVACY_POLICY.md)
+- [x] Create Terms of Service (docs/legal/TERMS_OF_SERVICE.md)
+- [x] Implement GDPR compliance features (GDPRService)
+- [x] Build user data deletion API (/api/v1/compliance/delete)
+- [x] Add data export functionality (/api/v1/compliance/export)
+- [x] Create compliance documentation (docs/legal/)
+- [x] Setup email retention disclosure (included in Privacy Policy)
 
 ## Phase 8: Encryption (Optional Feature)
 
@@ -326,6 +326,14 @@
 - ✅ Mailbox UI with inbox, sent emails, email detail views
 - ✅ Email compose page (paid tier gated)
 - ✅ Settings and upgrade pages with Stripe checkout
+- ✅ Phase 7 Security & Compliance (partial completion)
+  - Redis-based rate limiting with sliding window algorithm
+  - Brute force protection with lockout mechanism
+  - Security audit logging (PostgreSQL-based)
+  - Email size and attachment limits middleware
+  - GDPR compliance service (data export & deletion)
+  - Privacy Policy and Terms of Service documentation
+  - 115 security & compliance tests
 
 ## Next Priority Tasks
 

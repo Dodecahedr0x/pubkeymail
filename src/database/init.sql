@@ -171,6 +171,19 @@ CREATE INDEX idx_auth_nonces_expires_at ON auth_nonces(expires_at);
 -- Cleanup expired nonces periodically
 CREATE INDEX idx_auth_nonces_cleanup ON auth_nonces(expires_at, used) WHERE used = FALSE;
 
+-- Scheduled deletions table (for GDPR compliance with grace period)
+CREATE TABLE IF NOT EXISTS scheduled_deletions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    scheduled_for TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    CONSTRAINT scheduled_deletions_user_unique UNIQUE (user_id)
+);
+
+CREATE INDEX idx_scheduled_deletions_user ON scheduled_deletions(user_id);
+CREATE INDEX idx_scheduled_deletions_scheduled_for ON scheduled_deletions(scheduled_for);
+
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
