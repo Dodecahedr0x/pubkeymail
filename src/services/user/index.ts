@@ -14,3 +14,13 @@ export {
   type SubscriptionTier,
   type PaymentProvider,
 } from './user-service.js';
+
+export {
+  AddressLinkingService,
+  addressLinkingService,
+  type LinkAddressInput,
+  type LinkedAddress as AddressLinkLinkedAddress,
+  type UnifiedEmail,
+  type UnifiedMailboxResult,
+  type AddressLinkingResult,
+} from './address-linking-service.js';
