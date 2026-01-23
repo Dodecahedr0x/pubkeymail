@@ -53,3 +53,10 @@ export {
   type ForwardingRuleResult,
   type EmailForFiltering,
 } from './forwarding-service.js';
+
+export {
+  ForwardingExecutor,
+  forwardingExecutor,
+  type IncomingEmailData,
+  type ForwardingResult,
+} from './forwarding-executor.js';
