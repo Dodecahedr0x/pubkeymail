@@ -14,7 +14,7 @@ Blockchain-based email service with wallet authentication. Map blockchain addres
 
 ## Tech Stack
 
-- **Runtime**: Node.js 18+ with TypeScript
+- **Runtime**: Node.js 24+ with TypeScript
 - **Framework**: Express.js
 - **Database**: PostgreSQL with case-sensitive collation
 - **Cache**: Redis for sessions and nonce storage
@@ -76,7 +76,7 @@ Blockchain-based email service with wallet authentication. Map blockchain addres
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 24+
 - Docker and Docker Compose
 - pnpm (recommended) or npm
 

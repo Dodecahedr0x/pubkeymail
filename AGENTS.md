@@ -5,7 +5,7 @@ PubKeyMail is a blockchain-based email service with wallet authentication. The t
 
 ## Prerequisites
 - Docker and Docker Compose (for PostgreSQL, Redis)
-- Node.js 18+ (if using TypeScript/Node.js stack) OR Rust 1.70+ (if using Rust stack)
+- Node.js 24+ (if using TypeScript/Node.js stack) OR Rust 1.70+ (if using Rust stack)
 - Solana CLI tools (for blockchain integration)
 - Git for version control
 
