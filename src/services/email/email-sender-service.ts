@@ -509,6 +509,8 @@ export class EmailSenderService {
         return this.sendViaPostmark(email);
       case 'mailgun':
         return this.sendViaMailgun(email);
+      case 'mailjet':
+        return this.sendViaMailjet(email);
       default:
         return { success: false, error: `Unknown provider: ${this.provider}` };
     }
@@ -657,6 +659,61 @@ export class EmailSenderService {
       return {
         success: false,
         error: `Mailgun request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      };
+    }
+  }
+
+  /**
+   * Send via Mailjet API
+   * @see https://dev.mailjet.com/email/guides/send-api-v31/
+   */
+  private async sendViaMailjet(email: {
+    from: string;
+    to: string;
+    subject: string;
+    text?: string;
+    html?: string;
+    replyTo?: string;
+  }): Promise<{ success: boolean; messageId?: string; error?: string }> {
+    try {
+      const response = await fetch('https://api.mailjet.com/v3.1/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${smtpConfig.apiKey}`).toString('base64')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Messages: [
+            {
+              From: { Email: email.from },
+              To: [{ Email: email.to }],
+              Subject: email.subject,
+              TextPart: email.text,
+              HTMLPart: email.html,
+              ReplyTo: email.replyTo ? { Email: email.replyTo } : undefined,
+            },
+          ],
+        }),
+      });
+
+      const data = await response.json() as {
+        Messages?: Array<{ Status: string; To: Array<{ MessageID: number }> }>;
+        ErrorMessage?: string;
+      };
+
+      if (!response.ok || data.Messages?.[0]?.Status === 'error') {
+        return {
+          success: false,
+          error: `Mailjet API error: ${data.ErrorMessage || response.statusText}`,
+        };
+      }
+
+      const messageId = data.Messages?.[0]?.To?.[0]?.MessageID?.toString();
+      return { success: true, messageId };
+    } catch (error) {
+      return {
+        success: false,
+        error: `Mailjet request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       };
     }
   }

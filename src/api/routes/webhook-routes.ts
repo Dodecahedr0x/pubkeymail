@@ -85,6 +85,27 @@ function verifyMailgunSignature(req: Request, secret: string): boolean {
 }
 
 /**
+ * Verify Mailjet webhook signature
+ * @see https://dev.mailjet.com/email/guides/parse-api/
+ */
+function verifyMailjetSignature(req: Request, secret: string): boolean {
+  const signature = req.headers['x-mj-signature'] as string;
+
+  if (!signature) return false;
+
+  const payload = JSON.stringify(req.body);
+  const expectedSignature = createHmac('sha256', secret)
+    .update(payload)
+    .digest('hex');
+
+  try {
+    return timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Verify webhook signature (provider-specific)
  * Implements proper HMAC signature verification for each provider.
  *
@@ -116,6 +137,8 @@ function verifyWebhookSignature(req: Request): boolean {
       return verifyPostmarkSignature(req, secret);
     case 'mailgun':
       return verifyMailgunSignature(req, secret);
+    case 'mailjet':
+      return verifyMailjetSignature(req, secret);
     default: {
       // Fallback: check for generic signature header
       const genericSignature = req.headers['x-webhook-signature'] as string;
@@ -158,7 +181,7 @@ router.post('/inbound', async (req: Request, res: Response) => {
     }
 
     // Parse webhook payload
-    const parsed = parseWebhookEmail(req.body, smtpConfig.provider as 'sendgrid' | 'postmark' | 'mailgun');
+    const parsed = parseWebhookEmail(req.body, smtpConfig.provider as 'sendgrid' | 'postmark' | 'mailgun' | 'mailjet');
 
     // Convert to email creation data
     let emailData = webhookToCreateEmailData(parsed);

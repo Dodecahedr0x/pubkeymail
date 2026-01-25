@@ -1,7 +1,7 @@
 /**
  * SMTP Webhook Parser
  * Parses incoming email webhooks from various SMTP providers
- * Supports: SendGrid, Postmark, Mailgun
+ * Supports: SendGrid, Postmark, Mailgun, Mailjet
  */
 
 import { CreateEmailData, EmailHeaders, EmailAttachment } from '../../types/email.js';
@@ -67,6 +67,25 @@ export interface MailgunWebhook {
   'message-headers'?: string; // JSON string
   attachments?: Array<{ filename?: string; 'content-type'?: string; size?: number; content?: string }>;
   [key: string]: string | Array<{ filename?: string; 'content-type'?: string; size?: number; content?: string }> | undefined;
+}
+
+/**
+ * Mailjet Parse API webhook format
+ * https://dev.mailjet.com/email/guides/parse-api/
+ */
+export interface MailjetWebhook {
+  Sender: string;
+  Recipient: string;
+  Subject?: string;
+  'Text-part'?: string;
+  'Html-part'?: string;
+  Headers?: Record<string, string>;
+  Attachments?: Array<{
+    Filename: string;
+    'Content-type': string;
+    Size: number;
+    Base64content?: string;
+  }>;
 }
 
 /**
@@ -209,6 +228,36 @@ export function parseMailgunWebhook(payload: MailgunWebhook): ParsedWebhookEmail
 }
 
 /**
+ * Parse Mailjet inbound webhook
+ */
+export function parseMailjetWebhook(payload: MailjetWebhook): ParsedWebhookEmail {
+  const headers: EmailHeaders = payload.Headers || {};
+
+  // Parse attachments
+  const attachments: EmailAttachment[] = [];
+  if (payload.Attachments && Array.isArray(payload.Attachments)) {
+    attachments.push(
+      ...payload.Attachments.map((att) => ({
+        filename: att.Filename,
+        contentType: att['Content-type'],
+        size: att.Size,
+        content: att.Base64content,
+      }))
+    );
+  }
+
+  return {
+    to: payload.Recipient,
+    from: payload.Sender,
+    subject: payload.Subject,
+    bodyText: payload['Text-part'],
+    bodyHtml: payload['Html-part'],
+    headers,
+    attachments: attachments.length > 0 ? attachments : undefined,
+  };
+}
+
+/**
  * Generic webhook parser
  * Automatically detects provider based on payload structure
  *
@@ -231,9 +280,14 @@ function isMailgunWebhook(payload: unknown): payload is MailgunWebhook {
   return typeof p.recipient === 'string' && typeof p.sender === 'string';
 }
 
+function isMailjetWebhook(payload: unknown): payload is MailjetWebhook {
+  const p = payload as MailjetWebhook;
+  return typeof p.Recipient === 'string' && typeof p.Sender === 'string';
+}
+
 export function parseWebhookEmail(
-  payload: SendGridWebhook | PostmarkWebhook | MailgunWebhook,
-  provider?: 'sendgrid' | 'postmark' | 'mailgun'
+  payload: SendGridWebhook | PostmarkWebhook | MailgunWebhook | MailjetWebhook,
+  provider?: 'sendgrid' | 'postmark' | 'mailgun' | 'mailjet'
 ): ParsedWebhookEmail {
   // If provider specified, use that parser
   if (provider === 'sendgrid') {
@@ -245,10 +299,17 @@ export function parseWebhookEmail(
   if (provider === 'mailgun') {
     return parseMailgunWebhook(payload as MailgunWebhook);
   }
+  if (provider === 'mailjet') {
+    return parseMailjetWebhook(payload as MailjetWebhook);
+  }
 
   // Auto-detect provider based on payload structure
   if (isPostmarkWebhook(payload)) {
     return parsePostmarkWebhook(payload);
+  }
+
+  if (isMailjetWebhook(payload)) {
+    return parseMailjetWebhook(payload);
   }
 
   if (isMailgunWebhook(payload)) {

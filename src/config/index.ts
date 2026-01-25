@@ -46,7 +46,7 @@ const envSchema = z.object({
   CLEANUP_JOB_HOUR: z.coerce.number().min(0).max(23).default(2),
 
   // SMTP Provider
-  SMTP_PROVIDER: z.enum(['sendgrid', 'postmark', 'mailgun']).default('sendgrid'),
+  SMTP_PROVIDER: z.enum(['sendgrid', 'postmark', 'mailgun', 'mailjet']).default('sendgrid'),
   SMTP_API_KEY: z.string().min(1),
   SMTP_WEBHOOK_SECRET: z.string().min(1),
   SMTP_FROM_DOMAIN: z.string().min(1),

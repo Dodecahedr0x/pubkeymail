@@ -71,8 +71,7 @@
     "@types/node": "^20.10.4",
     "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.10.9",
-    "@typescript-eslint/eslint-plugin": "^6.13.2",
-    "@typescript-eslint/parser": "^6.13.2",
+
     "@vitest/coverage-v8": "^1.0.4",
     "eslint": "^9.39.2",
     "openapi3-ts": "^4.5.0",
