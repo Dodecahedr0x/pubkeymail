@@ -76,6 +76,7 @@ CREATE TABLE IF NOT EXISTS emails (
     recipient_address_id INTEGER NOT NULL REFERENCES blockchain_addresses(id) ON DELETE CASCADE,
     recipient_email VARCHAR(255) COLLATE "C" NOT NULL,
     sender_address VARCHAR(255) NOT NULL,
+    sender_email VARCHAR(255) NOT NULL,
     subject TEXT,
     body_text TEXT,
     body_html TEXT,
@@ -85,6 +86,7 @@ CREATE TABLE IF NOT EXISTS emails (
     expires_at TIMESTAMP WITH TIME ZONE,
     is_encrypted BOOLEAN DEFAULT FALSE,
     encryption_metadata JSONB,
+    read BOOLEAN DEFAULT FALSE,
 
     CONSTRAINT emails_expires_at_check
         CHECK (expires_at IS NULL OR expires_at > received_at)
@@ -94,6 +96,7 @@ CREATE INDEX idx_emails_recipient_address ON emails(recipient_address_id, receiv
 CREATE INDEX idx_emails_recipient_email ON emails(recipient_email COLLATE "C");
 CREATE INDEX idx_emails_expires_at ON emails(expires_at) WHERE expires_at IS NOT NULL;
 CREATE INDEX idx_emails_received_at ON emails(received_at DESC);
+CREATE INDEX idx_emails_read ON emails(read) WHERE read = FALSE;
 
 -- Sent emails table
 CREATE TABLE IF NOT EXISTS sent_emails (
@@ -223,9 +226,38 @@ CREATE TRIGGER update_user_encryption_keys_updated_at
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Comments for documentation
+-- Audit logs table (for security and compliance)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id SERIAL PRIMARY KEY,
+    event_type VARCHAR(100) NOT NULL,
+    actor_type VARCHAR(50) NOT NULL,
+    actor_id INTEGER,
+    actor_address VARCHAR(255) COLLATE "C",
+    resource_type VARCHAR(100),
+    resource_id VARCHAR(255),
+    action VARCHAR(100) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+
+    CONSTRAINT audit_logs_actor_type_check
+        CHECK (actor_type IN ('user', 'system', 'anonymous')),
+    CONSTRAINT audit_logs_status_check
+        CHECK (status IN ('success', 'failure', 'pending'))
+);
+
+CREATE INDEX idx_audit_logs_actor_id ON audit_logs(actor_id) WHERE actor_id IS NOT NULL;
+CREATE INDEX idx_audit_logs_actor_address ON audit_logs(actor_address COLLATE "C") WHERE actor_address IS NOT NULL;
+CREATE INDEX idx_audit_logs_event_type ON audit_logs(event_type);
+CREATE INDEX idx_audit_logs_created_at ON audit_logs(created_at DESC);
+CREATE INDEX idx_audit_logs_resource ON audit_logs(resource_type, resource_id) WHERE resource_type IS NOT NULL;
+
 COMMENT ON TABLE blockchain_addresses IS 'Stores blockchain addresses with case-sensitive collation. CRITICAL for security.';
 COMMENT ON COLUMN blockchain_addresses.address IS 'Case-sensitive blockchain address (base58 for Solana, hex for Ethereum)';
 COMMENT ON TABLE emails IS 'Stores received emails. expires_at is NULL for registered users (infinite retention)';
 COMMENT ON COLUMN emails.expires_at IS 'Expiration date for unregistered users. NULL = keep indefinitely (paid users)';
 COMMENT ON TABLE name_resolutions IS 'Caches name service resolutions (SNS, ENS) with TTL';
 COMMENT ON TABLE user_encryption_keys IS 'Optional encryption public keys for end-to-end encrypted emails';
+COMMENT ON TABLE audit_logs IS 'Security audit trail for all sensitive operations';
