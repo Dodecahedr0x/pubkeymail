@@ -1,2 +1,0 @@
-patchedDependencies:
-  '@solana/spl-name-service@0.2.1': patches/@solana__spl-name-service@0.2.1.patch
