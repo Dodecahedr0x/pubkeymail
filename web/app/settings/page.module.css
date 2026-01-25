@@ -133,3 +133,13 @@ code.value {
 .featureStatus {
   font-size: 1.25rem;
 }
+
+a.feature {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a.feature:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--color-primary);
+}

@@ -1,0 +1,256 @@
+.container {
+  max-width: 700px;
+}
+
+.container h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-lg);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.description {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xl);
+  line-height: 1.6;
+}
+
+.section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.section h2 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sectionHeader h2 {
+  margin-bottom: 0;
+}
+
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-xl);
+}
+
+.addressList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.addressCard {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  transition: all var(--transition-fast);
+}
+
+.addressCard:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+}
+
+.addressInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.addressIcon {
+  font-size: 1.5rem;
+}
+
+.addressDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.address {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.blockchain {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: capitalize;
+}
+
+.primaryBadge {
+  padding: 4px 12px;
+  background: var(--gradient-primary);
+  border-radius: var(--border-radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: white;
+  box-shadow: var(--shadow-glow-sm);
+}
+
+.verifiedDate {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.unlinkBtn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  border-radius: var(--border-radius);
+  color: #f87171;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all var(--transition-fast);
+}
+
+.unlinkBtn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #f87171;
+}
+
+.unlinkBtn:active {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.addAddress {
+  text-align: center;
+}
+
+.addAddress p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.confirmLink {
+  text-align: center;
+}
+
+.confirmLink p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.confirmLink code {
+  display: inline-block;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.8rem;
+  background: var(--glass-bg-active);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--glass-border);
+  word-break: break-all;
+}
+
+.signNote {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-lg);
+}
+
+.signingState {
+  text-align: center;
+  padding: var(--spacing-lg);
+  color: var(--text-secondary);
+}
+
+.limitReached {
+  text-align: center;
+}
+
+.limitReached p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--text-secondary);
+  background: var(--glass-bg);
+  border: 1px dashed var(--glass-border);
+  border-radius: var(--border-radius);
+}
+
+.error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  color: #f87171;
+  margin-bottom: var(--spacing-lg);
+}
+
+.loading {
+  text-align: center;
+  padding: var(--spacing-2xl);
+  color: var(--text-secondary);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin-bottom: var(--spacing-lg);
+  font-size: 0.875rem;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  transition: all var(--transition-fast);
+}
+
+.backLink:hover {
+  color: var(--text-primary);
+  background: var(--glass-bg);
+}
+
+@media (max-width: 600px) {
+  .addressCard {
+    flex-wrap: wrap;
+  }
+  
+  .addressInfo {
+    width: 100%;
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  .verifiedDate {
+    flex: 1;
+  }
+  
+  .confirmActions {
+    flex-direction: column;
+  }
+}

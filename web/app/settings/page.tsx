@@ -63,6 +63,24 @@ export default function SettingsPage() {
       </section>
       
       <section className={styles.section}>
+        <h2>Manage</h2>
+        <div className={styles.features}>
+          <Link href="/settings/addresses" className={styles.feature}>
+            <span className={styles.featureIcon}>🔗</span>
+            <span>Linked Addresses</span>
+            <span className={styles.featureStatus}>
+              {user.linkedAddresses?.length || 0} linked
+            </span>
+          </Link>
+          <Link href="/settings/forwarding" className={styles.feature}>
+            <span className={styles.featureIcon}>↪️</span>
+            <span>Email Forwarding</span>
+            <span className={styles.featureStatus}>→</span>
+          </Link>
+        </div>
+      </section>
+      
+      <section className={styles.section}>
         <h2>Features</h2>
         <div className={styles.features}>
           <div className={`${styles.feature} ${user.subscriptionTier === 'paid' ? styles.active : ''}`}>

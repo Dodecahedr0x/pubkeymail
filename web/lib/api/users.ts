@@ -30,8 +30,15 @@ export async function getProfile(address: string) {
 }
 
 export async function linkAddress(userId: number, address: string, blockchain = 'solana') {
-  return apiRequest<{ linkedAddress: { id: number; address: string } }>(
+  return apiRequest<{ linkedAddress: { id: number; address: string; blockchain: string; verifiedAt: string } }>(
     `/users/${userId}/link-address`,
     { method: 'POST', body: JSON.stringify({ address, blockchain }) }
+  );
+}
+
+export async function unlinkAddress(userId: number, addressId: number) {
+  return apiRequest<{ message: string }>(
+    `/users/${userId}/addresses/${addressId}`,
+    { method: 'DELETE' }
   );
 }

@@ -141,7 +141,7 @@
 - [x] Implement secondary address verification
 - [x] Build unified mailbox view
 - [x] Add address unlinking functionality
-- [ ] Create linked address management UI (web app)
+- [x] Create linked address management UI (web app)
 - [x] Write address linking tests
 
 ### Mailbox Merging
@@ -263,8 +263,8 @@
 - [x] Build subscription status display
 - [x] Implement upgrade/payment flow UI
 - [x] Create forwarding rules management
-- [ ] Build multi-address linking UI
-- [ ] Add address verification flow
+- [x] Build multi-address linking UI
+- [x] Add address verification flow
 
 ### Responsive Design
 - [x] Mobile-first responsive layout
