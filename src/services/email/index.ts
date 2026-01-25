@@ -60,3 +60,11 @@ export {
   type IncomingEmailData,
   type ForwardingResult,
 } from './forwarding-executor.js';
+
+export {
+  MailjetParseRouteService,
+  mailjetParseRouteService,
+  type ParseRouteData,
+  type ParseRouteResult,
+  type MultiRouteResult,
+} from './mailjet-parse-route-service.js';

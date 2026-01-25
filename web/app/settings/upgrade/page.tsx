@@ -83,7 +83,7 @@ export default function UpgradePage() {
         >
           <h3>Monthly</h3>
           <div className={styles.price}>
-            {pricing?.monthly.usd.formatted || '$9.99'}
+            {pricing?.monthly?.usd?.formatted || '$9.99'}
             <span>/month</span>
           </div>
         </button>
@@ -95,7 +95,7 @@ export default function UpgradePage() {
           <div className={styles.badge}>Save 17%</div>
           <h3>Yearly</h3>
           <div className={styles.price}>
-            {pricing?.yearly.usd.formatted || '$99.99'}
+            {pricing?.yearly?.usd?.formatted || '$99.99'}
             <span>/year</span>
           </div>
           <p className={styles.savings}>2 months free!</p>
@@ -120,7 +120,7 @@ export default function UpgradePage() {
           onClick={handleStripeCheckout}
           disabled={loading}
         >
-          {loading ? 'Processing...' : `Pay with Card - ${selectedPlan === 'monthly' ? pricing?.monthly.usd.formatted : pricing?.yearly.usd.formatted}`}
+          {loading ? 'Processing...' : `Pay with Card - ${selectedPlan === 'monthly' ? (pricing?.monthly?.usd?.formatted || '$9.99') : (pricing?.yearly?.usd?.formatted || '$99.99')}`}
         </button>
         
         <p className={styles.note}>

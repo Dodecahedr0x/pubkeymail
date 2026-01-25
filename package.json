@@ -47,6 +47,7 @@
   "license": "MIT",
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.4.0",
+    "@bonfida/spl-name-service": "^3.0.16",
     "@solana/spl-name-service": "^0.2.1",
     "@solana/web3.js": "^1.95.0",
     "bs58": "^5.0.0",

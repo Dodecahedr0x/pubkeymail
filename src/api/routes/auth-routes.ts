@@ -11,12 +11,45 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { authService } from '../../services/auth/auth-service.js';
 import { BlockchainType } from '../../types/blockchain.js';
-import { isBlockchainSupported } from '../../services/blockchain/provider-factory.js';
+import { isBlockchainSupported, getBlockchainProvider } from '../../services/blockchain/provider-factory.js';
 import { bruteForceProtection } from '../../services/security/index.js';
 import { rateLimiter } from '../../services/security/index.js';
 import { auditLogger } from '../../services/security/index.js';
+import { mailjetParseRouteService } from '../../services/email/index.js';
+import { SolanaProvider } from '../../services/blockchain/solana-provider.js';
 
 const router: Router = Router();
+
+/**
+ * Register Mailjet parse routes for a user's wallet address and SNS domains
+ * Called asynchronously after successful authentication
+ */
+async function registerParseRoutesForUser(address: string, blockchain: BlockchainType): Promise<void> {
+  try {
+    let domainNames: string[] = [];
+
+    // For Solana, get all SNS domains owned by the wallet
+    if (blockchain === 'solana') {
+      const provider = getBlockchainProvider(blockchain);
+      if (provider instanceof SolanaProvider) {
+        domainNames = await provider.getAllDomainsForWallet(address);
+      }
+    }
+
+    // Register routes with Mailjet
+    const result = await mailjetParseRouteService.registerRoutesForUser(address, domainNames);
+
+    if (result.registered.length > 0) {
+      console.log(`Registered parse routes for: ${result.registered.join(', ')}`);
+    }
+
+    if (result.failed.length > 0) {
+      console.warn(`Failed to register some parse routes:`, result.failed);
+    }
+  } catch (error) {
+    console.error('Error registering parse routes for user:', error);
+  }
+}
 
 /**
  * Request challenge schema validation
@@ -272,6 +305,12 @@ router.post('/verify', async (req: Request, res: Response) => {
       userAgent: req.headers['user-agent'],
       metadata: { blockchain },
     }).catch(() => {});
+
+    // Register Mailjet parse routes for this user's address and domains
+    // This enables receiving emails at wallet@pubkeymail.com and domain.sol@pubkeymail.com
+    registerParseRoutesForUser(result.address!, blockchain as BlockchainType).catch((error) => {
+      console.error('Failed to register parse routes:', error);
+    });
 
     // Success - return token
     res.status(200).json({

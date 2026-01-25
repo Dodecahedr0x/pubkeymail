@@ -8,10 +8,13 @@
  * - Never trust client-provided addresses without signature verification
  */
 
-import { Connection, PublicKey } from '@solana/web3.js';
+import { Connection, PublicKey, GetProgramAccountsFilter } from '@solana/web3.js';
 import { getHashedName, getNameAccountKey, NameRegistryState } from '@solana/spl-name-service';
 import nacl from 'tweetnacl';
 import bs58 from 'bs58';
+
+const NAME_PROGRAM_ID = new PublicKey('namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX');
+const ROOT_DOMAIN_ACCOUNT = new PublicKey('58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx');
 import {
   IBlockchainProvider,
   BlockchainType,
@@ -307,6 +310,99 @@ export class SolanaProvider implements IBlockchainProvider {
         `Failed to get balance: ${error instanceof Error ? error.message : 'Unknown error'}`,
         'solana'
       );
+    }
+  }
+
+  /**
+   * Get all SNS domain names owned by a wallet address
+   * Uses direct program account lookup for .sol domains
+   *
+   * @param address - The wallet address to lookup
+   * @returns Array of domain names (with .sol suffix)
+   */
+  async getAllDomainsForWallet(address: string): Promise<string[]> {
+    try {
+      const publicKey = new PublicKey(address);
+
+      // Query all name registry accounts owned by this wallet under the root domain
+      const filters: GetProgramAccountsFilter[] = [
+        {
+          memcmp: {
+            offset: 32, // Owner pubkey offset in NameRegistryState
+            bytes: publicKey.toBase58(),
+          },
+        },
+        {
+          memcmp: {
+            offset: 0, // Parent name account offset (root domain)
+            bytes: ROOT_DOMAIN_ACCOUNT.toBase58(),
+          },
+        },
+      ];
+
+      const accounts = await this.connection.getProgramAccounts(NAME_PROGRAM_ID, {
+        filters,
+        dataSlice: { offset: 0, length: 0 }, // We only need the pubkeys
+      });
+
+      if (!accounts || accounts.length === 0) {
+        return [];
+      }
+
+      // Perform reverse lookup for each domain
+      const domainNames = await Promise.all(
+        accounts.map(async (account) => {
+          try {
+            return await this.reverseLookupDomain(account.pubkey);
+          } catch {
+            return null;
+          }
+        })
+      );
+
+      return domainNames.filter((name): name is string => name !== null);
+    } catch (error) {
+      console.error('Failed to get domains for wallet:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Perform reverse lookup to get domain name from account key
+   * @param domainKey - The domain account public key
+   * @returns The domain name with .sol suffix
+   */
+  private async reverseLookupDomain(domainKey: PublicKey): Promise<string | null> {
+    try {
+      // Get the reverse lookup key
+      const hashedReverseLookup = await getHashedName(domainKey.toBase58());
+      const reverseLookupAccount = await getNameAccountKey(
+        hashedReverseLookup,
+        new PublicKey('58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx'), // Central state / reverse lookup class
+        undefined
+      );
+
+      const accountInfo = await this.connection.getAccountInfo(reverseLookupAccount);
+      if (!accountInfo || !accountInfo.data) {
+        return null;
+      }
+
+      // Parse the reverse name from account data
+      // The data format is: [header (96 bytes)] + [name string]
+      const data = accountInfo.data;
+      if (data.length <= 96) {
+        return null;
+      }
+
+      const nameData = data.slice(96);
+      const nullIndex = nameData.indexOf(0);
+      const name = new TextDecoder().decode(
+        nullIndex > 0 ? nameData.slice(0, nullIndex) : nameData
+      );
+
+      return name ? `${name}.sol` : null;
+    } catch {
+      return null;
     }
   }
 }
