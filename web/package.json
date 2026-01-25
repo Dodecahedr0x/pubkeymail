@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start -p ${PORT:-8080}",
+    "start": "node .next/standalone/server.js",
     "type-check": "tsc --noEmit",
     "lint": "eslint ."
   },
