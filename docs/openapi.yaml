@@ -500,44 +500,6 @@ components:
         - monthly
         - yearly
         - savings
-    StripeCheckoutRequest:
-      type: object
-      properties:
-        userId:
-          type: number
-          exclusiveMinimum: 0
-        plan:
-          type: string
-          enum:
-            - monthly
-            - yearly
-        successUrl:
-          type: string
-          format: uri
-        cancelUrl:
-          type: string
-          format: uri
-      required:
-        - userId
-        - plan
-        - successUrl
-        - cancelUrl
-    StripeCheckoutResponse:
-      type: object
-      properties:
-        sessionId:
-          type: string
-          example: cs_test_...
-        checkoutUrl:
-          type: string
-          format: uri
-        expiresAt:
-          type: string
-          format: date-time
-      required:
-        - sessionId
-        - checkoutUrl
-        - expiresAt
     SolanaPayRequest:
       type: object
       properties:
@@ -1180,15 +1142,7 @@ paths:
                     items:
                       type: string
                     example:
-                      - stripe
                       - solana_pay
-                  stripe:
-                    type: object
-                    properties:
-                      available:
-                        type: boolean
-                    required:
-                      - available
                   solana_pay:
                     type: object
                     properties:
@@ -1198,45 +1152,7 @@ paths:
                       - available
                 required:
                   - providers
-                  - stripe
                   - solana_pay
-  /api/v1/payments/stripe/checkout:
-    post:
-      tags:
-        - Payments
-      summary: Create Stripe checkout session
-      security:
-        - bearerAuth: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/StripeCheckoutRequest"
-      responses:
-        "200":
-          description: Checkout session created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StripeCheckoutResponse"
-        "400":
-          description: Validation error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "500":
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "501":
-          description: Stripe not configured
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
   /api/v1/payments/solana-pay/request:
     post:
       tags:
@@ -1300,48 +1216,6 @@ paths:
                   - verified
         "400":
           description: Verification failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-        "500":
-          description: Server error
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-  /api/v1/payments/webhooks/stripe:
-    post:
-      tags:
-        - Payments
-      summary: Stripe webhook handler
-      parameters:
-        - schema:
-            type: string
-          required: true
-          name: stripe-signature
-          in: header
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties: {}
-              additionalProperties: {}
-      responses:
-        "200":
-          description: Webhook received
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  received:
-                    type: boolean
-                required:
-                  - received
-        "400":
-          description: Invalid signature or webhook error
           content:
             application/json:
               schema:

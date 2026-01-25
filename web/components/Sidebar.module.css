@@ -83,6 +83,28 @@
   filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
 }
 
+.navItem.locked {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.navItem.locked:hover {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.premiumBadge {
+  margin-left: auto;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--gradient-primary);
+  color: white;
+  letter-spacing: 0.5px;
+}
+
 .icon {
   font-size: 1.25rem;
   position: relative;

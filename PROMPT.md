@@ -53,7 +53,7 @@ See [@fix_plan.md](./@fix_plan.md) for the detailed task list and progress.
 ### Technology Choices
 - **Blockchain**: Solana (primary), extensible to others
 - **Name Service**: Solana Name Service (SNS), extensible to ENS/others
-- **Payments**: Stripe (fiat) and Solana Pay (crypto)
+- **Payments**: Solana Pay (USDC)
 - **SMTP**: External provider integration (SendGrid/Postmark/Mailgun)
 - **Database**: PostgreSQL with case-sensitive collation
 - **Cache**: Redis for name service resolutions and rate limiting
@@ -79,7 +79,7 @@ pubkeymail/
 │   │   ├── blockchain/     # Solana, SNS resolution
 │   │   ├── cache/          # Redis client, nonce store
 │   │   ├── email/          # Ingestion, storage, cleanup
-│   │   └── payment/        # Stripe, Solana Pay
+│   │   └── payment/        # Solana Pay
 │   ├── types/              # TypeScript type definitions
 │   └── utils/              # Shared utilities
 ├── tests/                  # Test files

@@ -293,25 +293,6 @@ export const PricingResponseSchema = registry.register(
   })
 );
 
-export const StripeCheckoutRequestSchema = registry.register(
-  'StripeCheckoutRequest',
-  z.object({
-    userId: z.number().positive('Valid user ID required'),
-    plan: z.enum(['monthly', 'yearly']),
-    successUrl: z.string().url('Valid success URL required'),
-    cancelUrl: z.string().url('Valid cancel URL required'),
-  })
-);
-
-export const StripeCheckoutResponseSchema = registry.register(
-  'StripeCheckoutResponse',
-  z.object({
-    sessionId: z.string().openapi({ example: 'cs_test_...' }),
-    checkoutUrl: z.string().url(),
-    expiresAt: z.string().datetime(),
-  })
-);
-
 export const SolanaPayRequestSchema = registry.register(
   'SolanaPayRequest',
   z.object({

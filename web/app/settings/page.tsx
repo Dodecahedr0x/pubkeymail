@@ -72,10 +72,15 @@ export default function SettingsPage() {
               {user.linkedAddresses?.length || 0} linked
             </span>
           </Link>
-          <Link href="/settings/forwarding" className={styles.feature}>
+          <Link 
+            href="/settings/forwarding" 
+            className={`${styles.feature} ${user.subscriptionTier !== 'paid' ? styles.locked : ''}`}
+          >
             <span className={styles.featureIcon}>↪️</span>
             <span>Email Forwarding</span>
-            <span className={styles.featureStatus}>→</span>
+            <span className={styles.featureStatus}>
+              {user.subscriptionTier === 'paid' ? '→' : <span className={styles.premiumBadge}>Pro</span>}
+            </span>
           </Link>
         </div>
       </section>
@@ -105,6 +110,13 @@ export default function SettingsPage() {
           <div className={`${styles.feature} ${user.subscriptionTier === 'paid' ? styles.active : styles.locked}`}>
             <span className={styles.featureIcon}>🔗</span>
             <span>Link Multiple Addresses</span>
+            <span className={styles.featureStatus}>
+              {user.subscriptionTier === 'paid' ? '✅' : '🔒'}
+            </span>
+          </div>
+          <div className={`${styles.feature} ${user.subscriptionTier === 'paid' ? styles.active : styles.locked}`}>
+            <span className={styles.featureIcon}>↪️</span>
+            <span>Email Forwarding</span>
             <span className={styles.featureStatus}>
               {user.subscriptionTier === 'paid' ? '✅' : '🔒'}
             </span>

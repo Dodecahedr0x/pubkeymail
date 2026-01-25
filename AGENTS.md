@@ -187,8 +187,7 @@ JWT_SECRET=your-secret-key
 SESSION_DURATION=86400
 
 # Payments (add when implementing)
-STRIPE_SECRET_KEY=
-STRIPE_WEBHOOK_SECRET=
+
 SOLANA_PAY_MERCHANT_WALLET=
 ```
 

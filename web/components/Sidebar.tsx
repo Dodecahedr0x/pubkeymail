@@ -8,7 +8,7 @@ import styles from './Sidebar.module.css';
 const navItems = [
   { href: '/mailbox', label: 'Inbox', icon: '📥' },
   { href: '/mailbox/sent', label: 'Sent', icon: '📤' },
-  { href: '/mailbox/compose', label: 'Compose', icon: '✏️', paidOnly: true },
+  { href: '/mailbox/compose', label: 'Compose', icon: '✏️', premium: true },
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];
 
@@ -41,9 +41,23 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       
       <nav className={styles.nav}>
         {navItems.map((item) => {
-          if (item.paidOnly && !isPaid) return null;
-          
           const isActive = pathname === item.href;
+          const isLocked = item.premium && !isPaid;
+          
+          if (isLocked) {
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`${styles.navItem} ${styles.locked}`}
+                onClick={handleNavClick}
+              >
+                <span className={styles.icon}>{item.icon}</span>
+                {item.label}
+                <span className={styles.premiumBadge}>Pro</span>
+              </Link>
+            );
+          }
           
           return (
             <Link

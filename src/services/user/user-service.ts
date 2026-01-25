@@ -24,7 +24,7 @@ export type SubscriptionTier = 'free' | 'paid';
 /**
  * Payment provider type
  */
-export type PaymentProvider = 'stripe' | 'solana_pay' | null;
+export type PaymentProvider = 'solana_pay' | null;
 
 /**
  * User profile data
@@ -393,7 +393,7 @@ export class UserService {
    */
   async upgradeSubscription(
     userId: number,
-    paymentProvider: 'stripe' | 'solana_pay',
+    paymentProvider: 'solana_pay',
     paymentId: string,
     expiresAt: Date
   ): Promise<UserServiceResult<UserProfile>> {

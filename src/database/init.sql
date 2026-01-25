@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS users (
     CONSTRAINT users_subscription_tier_check
         CHECK (subscription_tier IN ('free', 'paid')),
     CONSTRAINT users_payment_provider_check
-        CHECK (payment_provider IS NULL OR payment_provider IN ('stripe', 'solana_pay')),
+        CHECK (payment_provider IS NULL OR payment_provider = 'solana_pay'),
     CONSTRAINT users_primary_address_unique UNIQUE (primary_address_id)
 );
 

@@ -74,6 +74,24 @@ export default function ForwardingPage() {
 
   if (!user) return null;
 
+  if (user.subscriptionTier !== 'paid') {
+    return (
+      <div className={styles.container}>
+        <Link href="/settings" className={styles.backLink}>
+          ← Back to Settings
+        </Link>
+
+        <div className={styles.upgrade}>
+          <h2>↪️ Email Forwarding</h2>
+          <p>Upgrade to Pro to automatically forward incoming emails to external addresses.</p>
+          <Link href="/settings/upgrade" className="btn btn-primary">
+            Upgrade to Pro
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.container}>
       <Link href="/settings" className={styles.backLink}>

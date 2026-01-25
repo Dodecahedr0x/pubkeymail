@@ -74,20 +74,3 @@ export async function cancelSubscription(userId: number) {
     body: JSON.stringify({ userId }),
   });
 }
-
-export interface StripeCheckoutResponse {
-  checkoutUrl: string;
-  sessionId: string;
-}
-
-export async function createStripeCheckout(
-  userId: number,
-  plan: 'monthly' | 'yearly',
-  successUrl: string,
-  cancelUrl: string
-) {
-  return apiRequest<StripeCheckoutResponse>('/payments/stripe/checkout', {
-    method: 'POST',
-    body: JSON.stringify({ userId, plan, successUrl, cancelUrl }),
-  });
-}

@@ -20,7 +20,7 @@ Blockchain-based email service with wallet authentication. Map blockchain addres
 - **Cache**: Redis for sessions and nonce storage
 - **Blockchain**: Solana Web3.js, Solana Name Service (SNS)
 - **Email**: SendGrid/Postmark/Mailgun (multi-provider support)
-- **Payments**: Stripe (fiat), Solana Pay (crypto)
+- **Payments**: Solana Pay (USDC)
 - **Testing**: Vitest with 85%+ coverage requirement
 
 ## Project Status
@@ -60,7 +60,7 @@ Blockchain-based email service with wallet authentication. Map blockchain addres
 **Phase 4: User Management & Payments**
 - User registration flow
 - Subscription tier management
-- Stripe and Solana Pay integration
+- Solana Pay (USDC) integration
 
 ### 📋 Planned
 
@@ -192,7 +192,7 @@ pubkeymail/
 │   │   ├── blockchain/     # Solana, SNS resolution
 │   │   ├── cache/          # Redis client, nonce store
 │   │   ├── email/          # Ingestion, storage, cleanup
-│   │   └── payment/        # Stripe, Solana Pay
+│   │   └── payment/        # Solana Pay
 │   ├── types/              # TypeScript type definitions
 │   └── utils/              # Shared utilities
 ├── tests/                  # Test files

@@ -222,6 +222,32 @@
   background: var(--glass-bg);
 }
 
+.upgrade {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius-xl);
+  padding: var(--spacing-2xl);
+  text-align: center;
+}
+
+.upgrade h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-lg);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.upgrade p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-xl);
+  line-height: 1.6;
+}
+
 @media (max-width: 600px) {
   .form {
     flex-direction: column;

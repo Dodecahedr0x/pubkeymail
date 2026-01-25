@@ -21,8 +21,6 @@ import {
   FromAddressSchema,
   GetSentEmailsQuerySchema,
   PricingResponseSchema,
-  StripeCheckoutRequestSchema,
-  StripeCheckoutResponseSchema,
   SolanaPayRequestSchema,
   SolanaPayResponseSchema,
   SolanaPayVerifyRequestSchema,
@@ -603,61 +601,9 @@ registry.registerPath({
       content: {
         'application/json': {
           schema: z.object({
-            providers: z.array(z.string()).openapi({ example: ['stripe', 'solana_pay'] }),
-            stripe: z.object({ available: z.boolean() }),
+            providers: z.array(z.string()).openapi({ example: ['solana_pay'] }),
             solana_pay: z.object({ available: z.boolean() }),
           }),
-        },
-      },
-    },
-  },
-});
-
-registry.registerPath({
-  method: 'post',
-  path: '/api/v1/payments/stripe/checkout',
-  tags: ['Payments'],
-  summary: 'Create Stripe checkout session',
-  security: [{ bearerAuth: [] }],
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: StripeCheckoutRequestSchema,
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      description: 'Checkout session created',
-      content: {
-        'application/json': {
-          schema: StripeCheckoutResponseSchema,
-        },
-      },
-    },
-    400: {
-      description: 'Validation error',
-      content: {
-        'application/json': {
-          schema: ErrorSchema,
-        },
-      },
-    },
-    501: {
-      description: 'Stripe not configured',
-      content: {
-        'application/json': {
-          schema: ErrorSchema,
-        },
-      },
-    },
-    500: {
-      description: 'Server error',
-      content: {
-        'application/json': {
-          schema: ErrorSchema,
         },
       },
     },
@@ -743,51 +689,6 @@ registry.registerPath({
     },
     400: {
       description: 'Verification failed',
-      content: {
-        'application/json': {
-          schema: ErrorSchema,
-        },
-      },
-    },
-    500: {
-      description: 'Server error',
-      content: {
-        'application/json': {
-          schema: ErrorSchema,
-        },
-      },
-    },
-  },
-});
-
-registry.registerPath({
-  method: 'post',
-  path: '/api/v1/payments/webhooks/stripe',
-  tags: ['Payments'],
-  summary: 'Stripe webhook handler',
-  request: {
-    headers: z.object({
-      'stripe-signature': z.string(),
-    }),
-    body: {
-      content: {
-        'application/json': {
-          schema: z.object({}).passthrough(),
-        },
-      },
-    },
-  },
-  responses: {
-    200: {
-      description: 'Webhook received',
-      content: {
-        'application/json': {
-          schema: z.object({ received: z.boolean() }),
-        },
-      },
-    },
-    400: {
-      description: 'Invalid signature or webhook error',
       content: {
         'application/json': {
           schema: ErrorSchema,

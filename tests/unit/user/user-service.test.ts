@@ -103,7 +103,7 @@ describe('UserService', () => {
         blockchain: 'solana',
         subscription_status: 'active',
         subscription_tier: 'paid',
-        payment_provider: 'stripe',
+        payment_provider: 'solana_pay',
         payment_id: 'sub_123',
         subscription_expires_at: new Date('2025-01-01'),
         created_at: new Date('2024-01-01'),
@@ -175,7 +175,7 @@ describe('UserService', () => {
               blockchain: 'solana',
               subscription_status: 'active',
               subscription_tier: 'paid',
-              payment_provider: 'stripe',
+              payment_provider: 'solana_pay',
               payment_id: 'sub_123',
               subscription_expires_at: new Date(),
               created_at: new Date(),
@@ -222,7 +222,7 @@ describe('UserService', () => {
               blockchain: 'solana',
               subscription_status: 'active',
               subscription_tier: 'paid',
-              payment_provider: 'stripe',
+              payment_provider: 'solana_pay',
               payment_id: 'sub_123',
               subscription_expires_at: new Date('2025-01-01'),
               created_at: new Date(),
@@ -234,7 +234,7 @@ describe('UserService', () => {
 
       const result = await userService.upgradeSubscription(
         1,
-        'stripe',
+        'solana_pay',
         'sub_123',
         new Date('2025-01-01')
       );

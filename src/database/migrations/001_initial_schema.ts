@@ -101,7 +101,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     check: "subscription_tier IN ('free', 'paid')",
   });
   pgm.addConstraint('users', 'users_payment_provider_check', {
-    check: "payment_provider IS NULL OR payment_provider IN ('stripe', 'solana_pay')",
+    check: "payment_provider IS NULL OR payment_provider = 'solana_pay'",
   });
 
   pgm.createIndex('users', 'primary_address_id', { name: 'idx_users_primary_address' });

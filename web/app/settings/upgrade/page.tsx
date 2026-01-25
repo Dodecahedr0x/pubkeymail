@@ -14,6 +14,7 @@ export default function UpgradePage() {
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly'>('yearly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentRequest, setPaymentRequest] = useState<paymentsApi.SolanaPayRequest | null>(null);
   
   useEffect(() => {
     async function fetchPricing() {
@@ -25,30 +26,22 @@ export default function UpgradePage() {
     fetchPricing();
   }, []);
   
-  const handleStripeCheckout = async () => {
+  const handleSolanaPayCheckout = async () => {
     if (!user) return;
     
     setLoading(true);
     setError(null);
     
     try {
-      const successUrl = `${window.location.origin}/settings?success=true`;
-      const cancelUrl = `${window.location.origin}/settings/upgrade`;
-      
-      const result = await paymentsApi.createStripeCheckout(
-        user.id,
-        selectedPlan,
-        successUrl,
-        cancelUrl
-      );
+      const result = await paymentsApi.createSolanaPayRequest(user.id, selectedPlan);
       
       if (result.error) {
         throw new Error(result.error.message);
       }
       
-      window.location.href = result.data!.checkoutUrl;
+      setPaymentRequest(result.data!);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start checkout');
+      setError(err instanceof Error ? err.message : 'Failed to create payment request');
     } finally {
       setLoading(false);
     }
@@ -83,7 +76,7 @@ export default function UpgradePage() {
         >
           <h3>Monthly</h3>
           <div className={styles.price}>
-            {pricing?.monthly?.usd?.formatted || '$9.99'}
+            {pricing?.monthly?.usdc?.formatted || '$2'}
             <span>/month</span>
           </div>
         </button>
@@ -92,13 +85,13 @@ export default function UpgradePage() {
           className={`${styles.plan} ${selectedPlan === 'yearly' ? styles.selected : ''}`}
           onClick={() => setSelectedPlan('yearly')}
         >
-          <div className={styles.badge}>Save 17%</div>
+          <div className={styles.badge}>Save 37%</div>
           <h3>Yearly</h3>
           <div className={styles.price}>
-            {pricing?.yearly?.usd?.formatted || '$99.99'}
+            {pricing?.yearly?.usdc?.formatted || '$15'}
             <span>/year</span>
           </div>
-          <p className={styles.savings}>2 months free!</p>
+          <p className={styles.savings}>Save over 4 months!</p>
         </button>
       </div>
       
@@ -115,16 +108,30 @@ export default function UpgradePage() {
       </div>
       
       <div className={styles.checkout}>
-        <button
-          className="btn btn-primary"
-          onClick={handleStripeCheckout}
-          disabled={loading}
-        >
-          {loading ? 'Processing...' : `Pay with Card - ${selectedPlan === 'monthly' ? (pricing?.monthly?.usd?.formatted || '$9.99') : (pricing?.yearly?.usd?.formatted || '$99.99')}`}
-        </button>
+        {paymentRequest ? (
+          <div className={styles.paymentInfo}>
+            <p>Send {selectedPlan === 'monthly' ? (pricing?.monthly?.usdc?.formatted || '$2') : (pricing?.yearly?.usdc?.formatted || '$15')} USDC to:</p>
+            <code className={styles.address}>{paymentRequest.recipient}</code>
+            <p className={styles.reference}>Reference: {paymentRequest.reference}</p>
+            <button 
+              className="btn btn-secondary"
+              onClick={() => setPaymentRequest(null)}
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button
+            className="btn btn-primary"
+            onClick={handleSolanaPayCheckout}
+            disabled={loading}
+          >
+            {loading ? 'Processing...' : `Pay with USDC - ${selectedPlan === 'monthly' ? (pricing?.monthly?.usdc?.formatted || '$2') : (pricing?.yearly?.usdc?.formatted || '$15')}`}
+          </button>
+        )}
         
         <p className={styles.note}>
-          Secure payment powered by Stripe
+          Secure payment powered by Solana Pay
         </p>
       </div>
     </div>
