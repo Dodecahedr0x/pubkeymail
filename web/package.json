@@ -5,10 +5,9 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -p ${PORT:-8080}",
     "type-check": "tsc --noEmit",
-    "lint": "eslint .",
-    "postinstall": "node scripts/patch-spl-name-service.mjs"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@solana/wallet-adapter-base": "^0.9.27",

@@ -148,7 +148,7 @@
 - [x] Implement merged mailbox query logic
 - [x] Create mailbox grouping API
 - [x] Build address selection for merged view
-- [ ] Add filtering by source address
+- [x] Add filtering by source address
 - [x] Write mailbox merging tests
 
 ## Phase 7: Security & Compliance (Medium Priority)
@@ -254,7 +254,7 @@
 - [x] Implement "From" address selector
 - [x] Build recipient input with validation
 - [x] Create rich text editor for email body
-- [ ] Add attachment upload support
+- [x] Add attachment upload support
 - [x] Implement send functionality
 - [x] Create sent emails view
 

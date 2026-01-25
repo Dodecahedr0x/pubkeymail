@@ -14,6 +14,15 @@ import { userService } from '../user/index.js';
 import type { BlockchainType } from '../../types/blockchain.js';
 
 /**
+ * Email attachment for sending
+ */
+export interface SendAttachment {
+  filename: string;
+  content: string; // Base64 encoded
+  contentType: string;
+}
+
+/**
  * Email composition data
  */
 export interface ComposeEmailInput {
@@ -23,6 +32,7 @@ export interface ComposeEmailInput {
   bodyText?: string;
   bodyHtml?: string;
   replyTo?: string;
+  attachments?: SendAttachment[];
 }
 
 /**
@@ -149,6 +159,7 @@ export class EmailSenderService {
         text: input.bodyText,
         html: input.bodyHtml,
         replyTo: input.replyTo,
+        attachments: input.attachments,
       });
 
       if (!sendResult.success) {
@@ -486,6 +497,7 @@ export class EmailSenderService {
     text?: string;
     html?: string;
     replyTo?: string;
+    attachments?: SendAttachment[];
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     // Mock implementation - in production, this would call the actual SMTP provider
     if (config.MOCK_SMTP_PROVIDER) {
@@ -493,6 +505,7 @@ export class EmailSenderService {
         from: email.from,
         to: email.to,
         subject: email.subject,
+        attachmentCount: email.attachments?.length || 0,
       });
 
       return {
@@ -527,24 +540,37 @@ export class EmailSenderService {
     text?: string;
     html?: string;
     replyTo?: string;
+    attachments?: SendAttachment[];
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
+      const payload: Record<string, unknown> = {
+        personalizations: [{ to: [{ email: email.to }] }],
+        from: { email: email.from },
+        reply_to: email.replyTo ? { email: email.replyTo } : undefined,
+        subject: email.subject,
+        content: [
+          ...(email.text ? [{ type: 'text/plain', value: email.text }] : []),
+          ...(email.html ? [{ type: 'text/html', value: email.html }] : []),
+        ],
+      };
+
+      // Add attachments if present
+      if (email.attachments && email.attachments.length > 0) {
+        payload['attachments'] = email.attachments.map((att) => ({
+          content: att.content,
+          filename: att.filename,
+          type: att.contentType,
+          disposition: 'attachment',
+        }));
+      }
+
       const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${smtpConfig.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: email.to }] }],
-          from: { email: email.from },
-          reply_to: email.replyTo ? { email: email.replyTo } : undefined,
-          subject: email.subject,
-          content: [
-            ...(email.text ? [{ type: 'text/plain', value: email.text }] : []),
-            ...(email.html ? [{ type: 'text/html', value: email.html }] : []),
-          ],
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -576,8 +602,27 @@ export class EmailSenderService {
     text?: string;
     html?: string;
     replyTo?: string;
+    attachments?: SendAttachment[];
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
+      const payload: Record<string, unknown> = {
+        From: email.from,
+        To: email.to,
+        Subject: email.subject,
+        TextBody: email.text,
+        HtmlBody: email.html,
+        ReplyTo: email.replyTo,
+      };
+
+      // Add attachments if present
+      if (email.attachments && email.attachments.length > 0) {
+        payload['Attachments'] = email.attachments.map((att) => ({
+          Name: att.filename,
+          Content: att.content,
+          ContentType: att.contentType,
+        }));
+      }
+
       const response = await fetch('https://api.postmarkapp.com/email', {
         method: 'POST',
         headers: {
@@ -585,14 +630,7 @@ export class EmailSenderService {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          From: email.from,
-          To: email.to,
-          Subject: email.subject,
-          TextBody: email.text,
-          HtmlBody: email.html,
-          ReplyTo: email.replyTo,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json() as { MessageID?: string; ErrorCode?: number; Message?: string };
@@ -624,11 +662,14 @@ export class EmailSenderService {
     text?: string;
     html?: string;
     replyTo?: string;
+    attachments?: SendAttachment[];
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
       // Extract domain from the from address for the API endpoint
       const domain = email.from.split('@')[1] || this.fromDomain;
-      const formData = new URLSearchParams();
+
+      // Use FormData for multipart/form-data (required for attachments)
+      const formData = new FormData();
       formData.append('from', email.from);
       formData.append('to', email.to);
       formData.append('subject', email.subject);
@@ -636,13 +677,21 @@ export class EmailSenderService {
       if (email.html) formData.append('html', email.html);
       if (email.replyTo) formData.append('h:Reply-To', email.replyTo);
 
+      // Add attachments if present
+      if (email.attachments && email.attachments.length > 0) {
+        for (const att of email.attachments) {
+          const buffer = Buffer.from(att.content, 'base64');
+          const blob = new Blob([buffer], { type: att.contentType });
+          formData.append('attachment', blob, att.filename);
+        }
+      }
+
       const response = await fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Basic ${Buffer.from(`api:${smtpConfig.apiKey}`).toString('base64')}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: formData.toString(),
+        body: formData,
       });
 
       const data = await response.json() as { id?: string; message?: string };
@@ -674,8 +723,27 @@ export class EmailSenderService {
     text?: string;
     html?: string;
     replyTo?: string;
+    attachments?: SendAttachment[];
   }): Promise<{ success: boolean; messageId?: string; error?: string }> {
     try {
+      const message: Record<string, unknown> = {
+        From: { Email: email.from },
+        To: [{ Email: email.to }],
+        Subject: email.subject,
+        TextPart: email.text,
+        HTMLPart: email.html,
+        ReplyTo: email.replyTo ? { Email: email.replyTo } : undefined,
+      };
+
+      // Add attachments if present
+      if (email.attachments && email.attachments.length > 0) {
+        message['Attachments'] = email.attachments.map((att) => ({
+          ContentType: att.contentType,
+          Filename: att.filename,
+          Base64Content: att.content,
+        }));
+      }
+
       const response = await fetch('https://api.mailjet.com/v3.1/send', {
         method: 'POST',
         headers: {
@@ -683,16 +751,7 @@ export class EmailSenderService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          Messages: [
-            {
-              From: { Email: email.from },
-              To: [{ Email: email.to }],
-              Subject: email.subject,
-              TextPart: email.text,
-              HTMLPart: email.html,
-              ReplyTo: email.replyTo ? { Email: email.replyTo } : undefined,
-            },
-          ],
+          Messages: [message],
         }),
       });
 

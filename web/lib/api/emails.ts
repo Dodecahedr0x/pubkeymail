@@ -20,21 +20,45 @@ export interface SentEmail {
   deliveryStatus: string;
 }
 
+export interface MailboxAddress {
+  address: string;
+  isPrimary: boolean;
+}
+
 export interface MailboxResponse {
   emails: Email[];
   total: number;
   limit: number;
   offset: number;
+  addresses: MailboxAddress[];
 }
 
-export async function getMailbox(addressId: number, limit = 50, offset = 0) {
+export async function getMailbox(
+  userId: number,
+  limit = 50,
+  offset = 0,
+  sourceAddress?: string
+) {
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    offset: offset.toString(),
+  });
+  if (sourceAddress) {
+    params.set('sourceAddress', sourceAddress);
+  }
   return apiRequest<MailboxResponse>(
-    `/emails/mailbox/${addressId}?limit=${limit}&offset=${offset}`
+    `/emails/mailbox/${userId}?${params.toString()}`
   );
 }
 
 export async function getEmail(emailId: string) {
   return apiRequest<{ email: Email }>(`/emails/${emailId}`);
+}
+
+export interface SendAttachment {
+  filename: string;
+  content: string;
+  contentType: string;
 }
 
 export async function sendEmail(data: {
@@ -44,6 +68,7 @@ export async function sendEmail(data: {
   subject: string;
   bodyText?: string;
   bodyHtml?: string;
+  attachments?: SendAttachment[];
 }) {
   return apiRequest<{ success: boolean; messageId: string; emailId: string }>(
     '/emails/send',

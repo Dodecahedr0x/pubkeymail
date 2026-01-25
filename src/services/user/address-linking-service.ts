@@ -278,19 +278,27 @@ export class AddressLinkingService {
    * @param userId - User ID
    * @param limit - Maximum emails to return
    * @param offset - Pagination offset
+   * @param sourceAddress - Optional filter by specific source address
    * @returns Emails from all addresses with total count
    */
   async getUnifiedMailbox(
     userId: number,
     limit: number = 50,
-    offset: number = 0
+    offset: number = 0,
+    sourceAddress?: string
   ): Promise<AddressLinkingResult<UnifiedMailboxResult>> {
     try {
       // Get all user's address IDs (primary + linked)
-      const addressResult = await db.query<{ address_id: number }>(
-        `SELECT primary_address_id as address_id FROM users WHERE id = $1
+      const addressResult = await db.query<{ address_id: number; address: string }>(
+        `SELECT primary_address_id as address_id, ba.address
+         FROM users u
+         JOIN blockchain_addresses ba ON u.primary_address_id = ba.id
+         WHERE u.id = $1
          UNION
-         SELECT address_id FROM address_links WHERE user_id = $1`,
+         SELECT al.address_id, ba.address
+         FROM address_links al
+         JOIN blockchain_addresses ba ON al.address_id = ba.id
+         WHERE al.user_id = $1`,
         [userId]
       );
 
@@ -301,7 +309,22 @@ export class AddressLinkingService {
         };
       }
 
-      const addressIds = addressResult.rows.map((r) => r.address_id);
+      // Filter by source address if specified
+      let addressIds: number[];
+      if (sourceAddress) {
+        const filteredRow = addressResult.rows.find(
+          (r) => r.address === sourceAddress
+        );
+        if (!filteredRow) {
+          return {
+            success: false,
+            error: 'Source address not found or not linked to user',
+          };
+        }
+        addressIds = [filteredRow.address_id];
+      } else {
+        addressIds = addressResult.rows.map((r) => r.address_id);
+      }
 
       // Get total count
       const countResult = await db.query<{ count: string }>(

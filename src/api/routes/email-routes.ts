@@ -3,16 +3,140 @@
  * API endpoints for email sending and management
  *
  * Endpoints:
+ * - GET /emails/mailbox/:userId - Get user's unified mailbox with optional filtering
  * - POST /emails/send - Send an email (paid tier only)
  * - GET /emails/sent - Get sent emails
  * - GET /emails/from-addresses - Get available "from" addresses
+ * - GET /emails/:emailId - Get specific email details
+ * - DELETE /emails/:emailId - Delete an email
  */
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { emailSenderService } from '../../services/email/index.js';
+import { addressLinkingService, userService } from '../../services/user/index.js';
 
 const router: Router = Router();
+
+/**
+ * Mailbox query schema
+ */
+const getMailboxSchema = z.object({
+  limit: z.coerce.number().min(1).max(100).default(50),
+  offset: z.coerce.number().min(0).default(0),
+  sourceAddress: z.string().optional(), // Filter by specific source address
+});
+
+/**
+ * GET /emails/mailbox/:userId
+ * Get user's unified mailbox (all linked addresses)
+ *
+ * Query params:
+ * - limit: number (default 50, max 100)
+ * - offset: number (default 0)
+ * - sourceAddress: string (optional) - Filter by specific source address
+ *
+ * Response:
+ * {
+ *   "emails": [...],
+ *   "total": 100,
+ *   "limit": 50,
+ *   "offset": 0,
+ *   "addresses": [...] - List of addresses included in the mailbox
+ * }
+ */
+router.get('/mailbox/:userId', async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params['userId'] || '0', 10);
+
+    if (!userId || isNaN(userId)) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Valid user ID is required',
+        },
+      });
+      return;
+    }
+
+    const validation = getMailboxSchema.safeParse(req.query);
+
+    if (!validation.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid query parameters',
+          details: validation.error.issues,
+        },
+      });
+      return;
+    }
+
+    const { limit, offset, sourceAddress } = validation.data;
+
+    // Get unified mailbox for user
+    const result = await addressLinkingService.getUnifiedMailbox(userId, limit, offset, sourceAddress);
+
+    if (!result.success) {
+      const status = result.error?.includes('not found') ? 404 : 400;
+      res.status(status).json({
+        error: {
+          code: 'FETCH_FAILED',
+          message: result.error || 'Failed to fetch mailbox',
+        },
+      });
+      return;
+    }
+
+    // Get user's addresses for filtering UI
+    const userResult = await userService.getUserById(userId);
+    const linkedAddressesResult = await addressLinkingService.getLinkedAddresses(userId);
+    
+    const addresses: Array<{ address: string; isPrimary: boolean }> = [];
+    
+    if (userResult.success && userResult.data) {
+      addresses.push({ address: userResult.data.primaryAddress, isPrimary: true });
+    }
+    
+    if (linkedAddressesResult.success && linkedAddressesResult.data) {
+      for (const la of linkedAddressesResult.data) {
+        addresses.push({ address: la.address, isPrimary: false });
+      }
+    }
+
+    res.status(200).json({
+      emails: result.data!.emails.map((email) => ({
+        id: email.id,
+        from: email.from,
+        to: email.sourceAddress,
+        subject: email.subject,
+        receivedAt: email.receivedAt,
+        read: email.read,
+      })),
+      total: result.data!.total,
+      limit,
+      offset,
+      addresses,
+    });
+  } catch (error) {
+    console.error('Get mailbox error:', error);
+    res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'An unexpected error occurred',
+      },
+    });
+  }
+});
+
+/**
+ * Attachment schema
+ */
+const attachmentSchema = z.object({
+  filename: z.string().min(1, 'Filename is required').max(255, 'Filename too long'),
+  content: z.string().min(1, 'Content is required'),
+  contentType: z.string().min(1, 'Content type is required'),
+});
 
 /**
  * Send email request schema
@@ -25,6 +149,7 @@ const sendEmailSchema = z.object({
   bodyText: z.string().optional(),
   bodyHtml: z.string().optional(),
   replyTo: z.string().email().optional(),
+  attachments: z.array(attachmentSchema).max(10, 'Maximum 10 attachments allowed').optional(),
 }).refine(
   (data) => data.bodyText || data.bodyHtml,
   { message: 'Either bodyText or bodyHtml is required' }
@@ -81,7 +206,7 @@ router.post('/send', async (req: Request, res: Response) => {
       return;
     }
 
-    const { userId, fromAddressId, toAddress, subject, bodyText, bodyHtml, replyTo } =
+    const { userId, fromAddressId, toAddress, subject, bodyText, bodyHtml, replyTo, attachments } =
       validation.data;
 
     const result = await emailSenderService.sendEmail(userId, {
@@ -91,6 +216,7 @@ router.post('/send', async (req: Request, res: Response) => {
       bodyText,
       bodyHtml,
       replyTo,
+      attachments,
     });
 
     if (!result.success) {

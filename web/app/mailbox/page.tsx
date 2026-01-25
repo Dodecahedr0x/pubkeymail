@@ -4,12 +4,17 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/providers';
 import { EmailList } from '@/components/EmailList';
 import * as emailsApi from '@/lib/api/emails';
-import type { Email } from '@/lib/api/emails';
+import type { Email, MailboxAddress } from '@/lib/api/emails';
 import styles from './page.module.css';
 
 const LIMIT = 50;
 const AUTO_REFRESH_INTERVAL = 30000;
 const AUTO_REFRESH_KEY = 'pubkeymail_auto_refresh';
+
+function formatAddress(addr: string) {
+  if (addr.length <= 12) return addr;
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+}
 
 export default function InboxPage() {
   const { user } = useAuth();
@@ -18,6 +23,8 @@ export default function InboxPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
+  const [addresses, setAddresses] = useState<MailboxAddress[]>([]);
+  const [selectedAddress, setSelectedAddress] = useState<string | undefined>(undefined);
   const [autoRefresh, setAutoRefresh] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(AUTO_REFRESH_KEY);
@@ -28,7 +35,12 @@ export default function InboxPage() {
   const [newEmailCount, setNewEmailCount] = useState(0);
   const lastTotalRef = useRef<number | null>(null);
   
-  const fetchEmails = useCallback(async (newOffset = 0, append = false, silent = false) => {
+  const fetchEmails = useCallback(async (
+    newOffset = 0,
+    append = false,
+    silent = false,
+    sourceAddress?: string
+  ) => {
     if (!user) return;
     
     if (!silent) {
@@ -37,7 +49,7 @@ export default function InboxPage() {
     }
     
     try {
-      const result = await emailsApi.getMailbox(user.id, LIMIT, newOffset);
+      const result = await emailsApi.getMailbox(user.id, LIMIT, newOffset, sourceAddress);
       
       if (result.error) {
         throw new Error(result.error.message);
@@ -59,6 +71,11 @@ export default function InboxPage() {
         }
         setOffset(newOffset);
         lastTotalRef.current = newTotal;
+        
+        // Update addresses list (only on initial load)
+        if (result.data!.addresses && result.data!.addresses.length > 0 && addresses.length === 0) {
+          setAddresses(result.data!.addresses);
+        }
       }
       setTotal(newTotal);
     } catch (err) {
@@ -70,11 +87,11 @@ export default function InboxPage() {
         setLoading(false);
       }
     }
-  }, [user]);
+  }, [user, addresses.length]);
   
   useEffect(() => {
-    fetchEmails();
-  }, [fetchEmails]);
+    fetchEmails(0, false, false, selectedAddress);
+  }, [selectedAddress]); // eslint-disable-line react-hooks/exhaustive-deps
   
   useEffect(() => {
     if (!autoRefresh || offset > 0) return;
@@ -84,7 +101,7 @@ export default function InboxPage() {
     const startPolling = () => {
       intervalId = setInterval(() => {
         if (!document.hidden) {
-          fetchEmails(0, false, true);
+          fetchEmails(0, false, true, selectedAddress);
         }
       }, AUTO_REFRESH_INTERVAL);
     };
@@ -96,7 +113,7 @@ export default function InboxPage() {
           intervalId = null;
         }
       } else {
-        fetchEmails(0, false, true);
+        fetchEmails(0, false, true, selectedAddress);
         startPolling();
       }
     };
@@ -108,7 +125,7 @@ export default function InboxPage() {
       if (intervalId) clearInterval(intervalId);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [autoRefresh, offset, fetchEmails]);
+  }, [autoRefresh, offset, fetchEmails, selectedAddress]);
   
   const toggleAutoRefresh = () => {
     const newValue = !autoRefresh;
@@ -117,12 +134,19 @@ export default function InboxPage() {
   };
   
   const handleLoadMore = () => {
-    fetchEmails(offset + LIMIT, true);
+    fetchEmails(offset + LIMIT, true, false, selectedAddress);
   };
   
   const handleRefresh = () => {
     setNewEmailCount(0);
-    fetchEmails(0, false);
+    fetchEmails(0, false, false, selectedAddress);
+  };
+  
+  const handleAddressChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setSelectedAddress(value === 'all' ? undefined : value);
+    setOffset(0);
+    lastTotalRef.current = null;
   };
   
   return (
@@ -135,6 +159,22 @@ export default function InboxPage() {
           )}
         </h1>
         <div className={styles.headerActions}>
+          {addresses.length > 1 && (
+            <select
+              className={styles.addressFilter}
+              value={selectedAddress || 'all'}
+              onChange={handleAddressChange}
+              title="Filter by address"
+            >
+              <option value="all">All addresses</option>
+              {addresses.map((addr) => (
+                <option key={addr.address} value={addr.address}>
+                  {formatAddress(addr.address)}
+                  {addr.isPrimary ? ' (Primary)' : ''}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             className={styles.autoRefreshToggle}
             onClick={toggleAutoRefresh}

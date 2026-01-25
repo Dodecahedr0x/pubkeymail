@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useToast } from '@/providers';
 import * as emailsApi from '@/lib/api/emails';
+import type { SendAttachment } from '@/lib/api/emails';
 import { RichTextEditor } from '@/components/RichTextEditor';
 import styles from './page.module.css';
 
@@ -14,10 +15,25 @@ interface FromAddress {
   blockchain: string;
 }
 
+interface AttachmentFile {
+  file: File;
+  preview: string;
+}
+
+const MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_ATTACHMENTS = 10;
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function ComposePage() {
   const { user } = useAuth();
   const router = useRouter();
   const { showToast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [fromAddresses, setFromAddresses] = useState<FromAddress[]>([]);
   const [selectedFromId, setSelectedFromId] = useState<number | null>(null);
@@ -25,6 +41,7 @@ export default function ComposePage() {
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('');
   const [bodyText, setBodyText] = useState('');
+  const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -44,6 +61,80 @@ export default function ComposePage() {
     
     fetchFromAddresses();
   }, [user]);
+  
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const newAttachments: AttachmentFile[] = [];
+    let hasError = false;
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      
+      if (attachments.length + newAttachments.length >= MAX_ATTACHMENTS) {
+        setError(`Maximum ${MAX_ATTACHMENTS} attachments allowed`);
+        hasError = true;
+        break;
+      }
+      
+      if (file.size > MAX_ATTACHMENT_SIZE) {
+        setError(`File "${file.name}" is too large. Maximum size is 10MB.`);
+        hasError = true;
+        continue;
+      }
+      
+      newAttachments.push({
+        file,
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
+      });
+    }
+    
+    if (!hasError) {
+      setError(null);
+    }
+    
+    setAttachments([...attachments, ...newAttachments]);
+    
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  const removeAttachment = (index: number) => {
+    const newAttachments = [...attachments];
+    const removed = newAttachments.splice(index, 1);
+    if (removed[0]?.preview) {
+      URL.revokeObjectURL(removed[0].preview);
+    }
+    setAttachments(newAttachments);
+  };
+  
+  const convertAttachmentsToBase64 = async (): Promise<SendAttachment[]> => {
+    const result: SendAttachment[] = [];
+    
+    for (const att of attachments) {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          const base64Data = dataUrl.split(',')[1] || '';
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(att.file);
+      });
+      
+      result.push({
+        filename: att.file.name,
+        content: base64,
+        contentType: att.file.type || 'application/octet-stream',
+      });
+    }
+    
+    return result;
+  };
   
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +158,9 @@ export default function ComposePage() {
     setError(null);
     
     try {
+      // Convert attachments to base64
+      const attachmentData = await convertAttachmentsToBase64();
+      
       const result = await emailsApi.sendEmail({
         userId: user.id,
         fromAddressId: selectedFromId,
@@ -74,6 +168,7 @@ export default function ComposePage() {
         subject: subject.trim(),
         bodyText: bodyText,
         bodyHtml: bodyHtml,
+        attachments: attachmentData.length > 0 ? attachmentData : undefined,
       });
       
       if (result.error) {
@@ -183,6 +278,56 @@ export default function ComposePage() {
             }}
             placeholder="Write your message..."
           />
+        </div>
+        
+        <div className={styles.field}>
+          <label>Attachments</label>
+          <div className={styles.attachmentSection}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              onChange={handleFileSelect}
+              className={styles.fileInput}
+              id="attachments"
+            />
+            <label htmlFor="attachments" className={styles.attachButton}>
+              📎 Add Attachments
+            </label>
+            <span className={styles.attachHint}>
+              Max {MAX_ATTACHMENTS} files, 10MB each
+            </span>
+          </div>
+          
+          {attachments.length > 0 && (
+            <div className={styles.attachmentList}>
+              {attachments.map((att, index) => (
+                <div key={index} className={styles.attachmentItem}>
+                  <div className={styles.attachmentInfo}>
+                    <span className={styles.attachmentIcon}>
+                      {att.file.type.startsWith('image/') ? '🖼️' : '📄'}
+                    </span>
+                    <span className={styles.attachmentName} title={att.file.name}>
+                      {att.file.name.length > 30 
+                        ? `${att.file.name.slice(0, 27)}...` 
+                        : att.file.name}
+                    </span>
+                    <span className={styles.attachmentSize}>
+                      {formatFileSize(att.file.size)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.removeAttachment}
+                    onClick={() => removeAttachment(index)}
+                    title="Remove attachment"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         
         <div className={styles.actions}>
