@@ -10,6 +10,11 @@ import { z } from 'zod';
 // Load environment variables
 loadEnv();
 
+// Backwards-compatible env var aliases (typo fix)
+if (!process.env['SMTP_WEBHOOK_SECRET'] && process.env['SMTP_WEKHOOK_SECRET']) {
+  process.env['SMTP_WEBHOOK_SECRET'] = process.env['SMTP_WEKHOOK_SECRET'];
+}
+
 /**
  * Environment variable schema with validation
  * All required variables must be present or app will fail to start

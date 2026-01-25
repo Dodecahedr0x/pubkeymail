@@ -20,6 +20,12 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment Variables
+
+- `NEXT_PUBLIC_API_URL` - API base URL for the web app.
+- `NEXT_PUBLIC_SOLANA_NETWORK` - Solana cluster (`devnet`, `testnet`, `mainnet-beta`).
+- `NEXT_PUBLIC_SOLANA_RPC` - Solana RPC endpoint for the web app.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
