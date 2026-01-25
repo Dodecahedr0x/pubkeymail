@@ -45,7 +45,7 @@ const patchEsmBindings = async () => {
   try {
     const raw = await fs.readFile(esmIndexPath, 'utf8');
     const patched = raw.replace(
-      /(from\s+['"]\.\/bindings)(['"])/g,
+      /(from\s+['"]\.\/(?!.*\.(?:js|cjs|mjs|json)$)[^'"]+)(['"])/g,
       '$1.js$2'
     );
 
