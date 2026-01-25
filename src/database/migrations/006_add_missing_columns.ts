@@ -75,7 +75,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     },
     metadata: {
       type: 'jsonb',
-      default: "'{}'",
+      default: pgm.func("'{}'::jsonb"),
     },
     created_at: {
       type: 'timestamptz',
