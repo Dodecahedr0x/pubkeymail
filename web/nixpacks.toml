@@ -5,11 +5,7 @@ nixPkgs = ["nodejs_24"]
 cmds = ["npm ci"]
 
 [phases.build]
-cmds = [
-  "npm run build",
-  "cp -r .next/static .next/standalone/.next/static",
-  "cp -r public .next/standalone/public"
-]
+cmds = ["npm run build"]
 
 [start]
-cmd = "HOSTNAME=0.0.0.0 PORT=${PORT:-8080} node .next/standalone/server.js"
+cmd = "HOSTNAME=0.0.0.0 PORT=${PORT:-8080} npm start"
