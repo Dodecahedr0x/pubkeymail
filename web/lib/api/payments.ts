@@ -1,9 +1,14 @@
 import { apiRequest } from './client';
 
-export interface PlanPricing {
+export interface CurrencyPricing {
   amount: number;
   currency: string;
   formatted: string;
+}
+
+export interface PlanPricing {
+  usd: CurrencyPricing;
+  usdc?: CurrencyPricing;
 }
 
 export interface Pricing {
@@ -67,5 +72,22 @@ export async function cancelSubscription(userId: number) {
   return apiRequest<{ message: string }>('/payments/cancel', {
     method: 'POST',
     body: JSON.stringify({ userId }),
+  });
+}
+
+export interface StripeCheckoutResponse {
+  checkoutUrl: string;
+  sessionId: string;
+}
+
+export async function createStripeCheckout(
+  userId: number,
+  plan: 'monthly' | 'yearly',
+  successUrl: string,
+  cancelUrl: string
+) {
+  return apiRequest<StripeCheckoutResponse>('/payments/stripe/checkout', {
+    method: 'POST',
+    body: JSON.stringify({ userId, plan, successUrl, cancelUrl }),
   });
 }

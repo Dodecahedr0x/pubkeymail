@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, ReactNode } from 'react';
-import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { WalletAdapterNetwork, Adapter } from '@solana/wallet-adapter-base';
 import { ConnectionProvider, WalletProvider as SolanaWalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
@@ -20,9 +20,9 @@ export function WalletProvider({ children }: Props) {
     return process.env.NEXT_PUBLIC_SOLANA_RPC || clusterApiUrl(network);
   }, [network]);
   
-  const wallets = useMemo(() => [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
+  const wallets = useMemo<Adapter[]>(() => [
+    new PhantomWalletAdapter() as unknown as Adapter,
+    new SolflareWalletAdapter() as unknown as Adapter,
   ], []);
   
   return (
