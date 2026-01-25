@@ -37,20 +37,27 @@ const normalizeExports = (exportsField) => {
 };
 
 const patchEsmBindings = async () => {
-  const esmIndexPath = path.resolve(
+  const esmDir = path.resolve(
     process.cwd(),
-    'node_modules/@solana/spl-name-service/lib/esm/index.js'
+    'node_modules/@solana/spl-name-service/lib/esm'
   );
 
   try {
-    const raw = await fs.readFile(esmIndexPath, 'utf8');
-    const patched = raw.replace(
-      /(from\s+['"]\.\/(?!.*\.(?:js|cjs|mjs|json)$)[^'"]+)(['"])/g,
-      '$1.js$2'
-    );
+    const entries = await fs.readdir(esmDir, { withFileTypes: true });
+    const targets = entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.js'))
+      .map((entry) => path.join(esmDir, entry.name));
 
-    if (raw !== patched) {
-      await fs.writeFile(esmIndexPath, patched, 'utf8');
+    for (const filePath of targets) {
+      const raw = await fs.readFile(filePath, 'utf8');
+      const patched = raw.replace(
+        /(from\s+['"]\.\/(?!.*\.(?:js|cjs|mjs|json)$)[^'"]+)(['"])/g,
+        '$1.js$2'
+      );
+
+      if (raw !== patched) {
+        await fs.writeFile(filePath, patched, 'utf8');
+      }
     }
   } catch (error) {
     if (error?.code === 'ENOENT') {
