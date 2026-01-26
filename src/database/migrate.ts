@@ -33,6 +33,13 @@ async function runMigrations(): Promise<void> {
   console.log(`Migration directory: ${resolve(__dirname, 'migrations')}`);
 
   try {
+    const filterLog = (msg: string) => {
+      if (typeof msg === 'string' && msg.includes("Can't determine timestamp")) {
+        return;
+      }
+      console.log(msg);
+    };
+
     await runner({
       databaseUrl: DATABASE_URL!,
       dir: resolve(__dirname, 'migrations'),
@@ -40,7 +47,7 @@ async function runMigrations(): Promise<void> {
       count: direction === 'down' ? count : undefined,
       migrationsTable: 'pgmigrations',
       verbose: true,
-      log: console.log,
+      log: filterLog,
     });
 
     console.log('Migrations completed successfully');

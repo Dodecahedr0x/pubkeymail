@@ -15,8 +15,10 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { emailSenderService } from '../../services/email/index.js';
 import { addressLinkingService, userService } from '../../services/user/index.js';
+import { createLogger } from '../../services/logger/index.js';
 
 const router: Router = Router();
+const log = createLogger('EmailRoutes');
 
 /**
  * Mailbox query schema
@@ -48,8 +50,10 @@ const getMailboxSchema = z.object({
 router.get('/mailbox/:userId', async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params['userId'] || '0', 10);
+    log.debug('Get mailbox request', { userId, query: req.query });
 
     if (!userId || isNaN(userId)) {
+      log.warn('Invalid user ID in mailbox request', { userId: req.params['userId'] });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -62,6 +66,7 @@ router.get('/mailbox/:userId', async (req: Request, res: Response) => {
     const validation = getMailboxSchema.safeParse(req.query);
 
     if (!validation.success) {
+      log.warn('Mailbox query validation failed', { userId, errors: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -104,6 +109,7 @@ router.get('/mailbox/:userId', async (req: Request, res: Response) => {
       }
     }
 
+    log.info('Mailbox retrieved successfully', { userId, emailCount: result.data!.emails.length, total: result.data!.total });
     res.status(200).json({
       emails: result.data!.emails.map((email) => ({
         id: email.id,
@@ -119,7 +125,7 @@ router.get('/mailbox/:userId', async (req: Request, res: Response) => {
       addresses,
     });
   } catch (error) {
-    console.error('Get mailbox error:', error);
+    log.error('Get mailbox error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -193,9 +199,11 @@ const getSentEmailsSchema = z.object({
  */
 router.post('/send', async (req: Request, res: Response) => {
   try {
+    log.debug('Send email request', { body: { ...req.body, bodyText: undefined, bodyHtml: undefined } });
     const validation = sendEmailSchema.safeParse(req.body);
 
     if (!validation.success) {
+      log.warn('Send email validation failed', { errors: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -228,10 +236,12 @@ router.post('/send', async (req: Request, res: Response) => {
         status = 403;
       } else if (result.error?.includes('Rate limit')) {
         status = 429;
+        log.warn('Email rate limit exceeded', { userId, fromAddressId, toAddress });
       } else if (result.error?.includes('permission')) {
         status = 403;
       }
 
+      log.warn('Email send failed', { userId, toAddress, error: result.error, status });
       res.status(status).json({
         error: {
           code: 'SEND_FAILED',
@@ -241,6 +251,7 @@ router.post('/send', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Email sent successfully', { userId, emailId: result.emailId, toAddress, messageId: result.messageId });
     res.status(200).json({
       success: true,
       messageId: result.messageId,
@@ -248,7 +259,7 @@ router.post('/send', async (req: Request, res: Response) => {
       details: result.details,
     });
   } catch (error) {
-    console.error('Send email error:', error);
+    log.error('Send email error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -277,9 +288,11 @@ router.post('/send', async (req: Request, res: Response) => {
  */
 router.get('/sent', async (req: Request, res: Response) => {
   try {
+    log.debug('Get sent emails request', { query: req.query });
     const validation = getSentEmailsSchema.safeParse(req.query);
 
     if (!validation.success) {
+      log.warn('Get sent emails validation failed', { errors: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -294,6 +307,7 @@ router.get('/sent', async (req: Request, res: Response) => {
 
     const result = await emailSenderService.getSentEmails(userId, limit, offset);
 
+    log.info('Sent emails retrieved', { userId, count: result.emails.length, total: result.total });
     res.status(200).json({
       emails: result.emails.map((email) => ({
         id: email.id,
@@ -308,7 +322,7 @@ router.get('/sent', async (req: Request, res: Response) => {
       offset,
     });
   } catch (error) {
-    console.error('Get sent emails error:', error);
+    log.error('Get sent emails error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -340,8 +354,10 @@ router.get('/sent', async (req: Request, res: Response) => {
 router.get('/from-addresses', async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.query['userId'] as string, 10);
+    log.debug('Get from addresses request', { userId });
 
     if (!userId || isNaN(userId)) {
+      log.warn('Invalid userId in from-addresses request', { userId: req.query['userId'] });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -353,9 +369,10 @@ router.get('/from-addresses', async (req: Request, res: Response) => {
 
     const addresses = await emailSenderService.getFromAddresses(userId);
 
+    log.info('From addresses retrieved', { userId, count: addresses.length });
     res.status(200).json({ addresses });
   } catch (error) {
-    console.error('Get from addresses error:', error);
+    log.error('Get from addresses error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -373,8 +390,10 @@ router.get('/:emailId', async (req: Request, res: Response) => {
   try {
     const emailId = req.params['emailId'];
     const userId = parseInt(req.query['userId'] as string, 10);
+    log.debug('Get email request', { emailId, userId });
 
     if (!emailId || !userId || isNaN(userId)) {
+      log.warn('Invalid emailId or userId in get email request', { emailId, userId: req.query['userId'] });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -389,6 +408,7 @@ router.get('/:emailId', async (req: Request, res: Response) => {
     const email = result.emails.find((e) => e.id === emailId);
 
     if (!email) {
+      log.warn('Email not found', { emailId, userId });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -398,6 +418,7 @@ router.get('/:emailId', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Email retrieved', { emailId, userId });
     res.status(200).json({
       email: {
         id: email.id,
@@ -412,7 +433,7 @@ router.get('/:emailId', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get email error:', error);
+    log.error('Get email error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',

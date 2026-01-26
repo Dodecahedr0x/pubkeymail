@@ -13,6 +13,9 @@
 import cron from 'node-cron';
 import { emailCleanupService, type CleanupResult } from './cleanup-service.js';
 import { emailConfig } from '../../config/index.js';
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('CleanupScheduler');
 
 /**
  * Scheduler state for monitoring
@@ -74,12 +77,12 @@ export class EmailCleanupScheduler {
     } = options;
 
     if (!enabled) {
-      console.log('[EmailCleanupScheduler] Scheduler is disabled');
+      log.info('Scheduler is disabled');
       return;
     }
 
     if (this.task) {
-      console.log('[EmailCleanupScheduler] Scheduler already running');
+      log.debug('Scheduler already running');
       return;
     }
 
@@ -102,19 +105,17 @@ export class EmailCleanupScheduler {
       }
     );
 
-    console.log(
-      `[EmailCleanupScheduler] Started with schedule: ${cronExpression} (${timezone})`
-    );
+    log.info('Started with schedule', { cronExpression, timezone });
 
     // Calculate next run
     this.updateNextScheduledRun(cronExpression);
 
     // Run immediately on startup if requested
     if (runOnStartup) {
-      console.log('[EmailCleanupScheduler] Running initial cleanup on startup');
+      log.info('Running initial cleanup on startup');
       // Don't await - run in background
       this.executeCleanup().catch((error) => {
-        console.error('[EmailCleanupScheduler] Startup cleanup failed:', error);
+        log.error('Startup cleanup failed', { error });
       });
     }
   }
@@ -126,7 +127,7 @@ export class EmailCleanupScheduler {
     if (this.task) {
       this.task.stop();
       this.task = null;
-      console.log('[EmailCleanupScheduler] Stopped');
+      log.info('Stopped');
     }
   }
 
@@ -137,9 +138,7 @@ export class EmailCleanupScheduler {
   private async executeCleanup(): Promise<void> {
     // Prevent overlapping executions
     if (this.state.isRunning) {
-      console.warn(
-        '[EmailCleanupScheduler] Cleanup already running, skipping this execution'
-      );
+      log.warn('Cleanup already running, skipping this execution');
       return;
     }
 
@@ -147,11 +146,11 @@ export class EmailCleanupScheduler {
     const startTime = Date.now();
 
     try {
-      console.log('[EmailCleanupScheduler] Starting cleanup job');
+      log.info('Starting cleanup job');
 
       // Get stats before cleanup
       const statsBefore = await emailCleanupService.getCleanupStats();
-      console.log('[EmailCleanupScheduler] Pre-cleanup stats:', {
+      log.debug('Pre-cleanup stats', {
         totalEmails: statsBefore.totalEmailsInSystem,
         expiredEmails: statsBefore.expiredEmailsCount,
         registeredUserEmails: statsBefore.registeredUserEmailsCount,
@@ -173,7 +172,7 @@ export class EmailCleanupScheduler {
 
       // Log result
       const duration = Date.now() - startTime;
-      console.log('[EmailCleanupScheduler] Cleanup completed:', {
+      log.info('Cleanup completed', {
         success: result.success,
         deletedCount: result.deletedCount,
         duration: `${duration}ms`,
@@ -184,7 +183,7 @@ export class EmailCleanupScheduler {
 
       // Log errors if any
       if (result.details.errors.length > 0) {
-        console.error('[EmailCleanupScheduler] Cleanup errors:', result.details.errors);
+        log.error('Cleanup errors', { errors: result.details.errors });
       }
 
       // Call custom logger if provided
@@ -192,11 +191,11 @@ export class EmailCleanupScheduler {
         try {
           await this.logger(result);
         } catch (error) {
-          console.error('[EmailCleanupScheduler] Logger failed:', error);
+          log.error('Logger failed', { error });
         }
       }
     } catch (error) {
-      console.error('[EmailCleanupScheduler] Cleanup job failed:', error);
+      log.error('Cleanup job failed', { error });
       this.state.totalErrors++;
     } finally {
       this.state.isRunning = false;
@@ -256,7 +255,7 @@ export class EmailCleanupScheduler {
     this.state.isRunning = true;
 
     try {
-      console.log(`[EmailCleanupScheduler] Running manual cleanup (dryRun: ${dryRun})`);
+      log.info('Running manual cleanup', { dryRun });
 
       const result = await emailCleanupService.cleanupExpiredEmails({
         dryRun,
@@ -324,6 +323,6 @@ export const emailCleanupScheduler = new EmailCleanupScheduler();
  * Call this when shutting down the application
  */
 export function shutdownCleanupScheduler(): void {
-  console.log('[EmailCleanupScheduler] Shutting down gracefully...');
+  log.info('Shutting down gracefully...');
   emailCleanupScheduler.stop();
 }

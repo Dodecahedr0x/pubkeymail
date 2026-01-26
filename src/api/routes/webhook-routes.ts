@@ -17,6 +17,9 @@ import {
 } from '../../services/email/webhook-parser.js';
 import { smtpConfig } from '../../config/index.js';
 import { userService } from '../../services/user/index.js';
+import { createLogger } from '../../services/logger/index.js';
+
+const log = createLogger('WebhookRoutes');
 
 const router: Router = Router();
 
@@ -170,8 +173,11 @@ function verifyWebhookSignature(req: Request): boolean {
  */
 router.post('/inbound', async (req: Request, res: Response) => {
   try {
+    log.debug('Received inbound webhook', { provider: smtpConfig.provider, bodyKeys: Object.keys(req.body) });
+
     // Verify webhook signature
     if (!verifyWebhookSignature(req)) {
+      log.warn('Webhook signature verification failed', { provider: smtpConfig.provider });
       res.status(401).json({
         error: {
           code: 'INVALID_SIGNATURE',
@@ -198,6 +204,7 @@ router.post('/inbound', async (req: Request, res: Response) => {
     // Validate email data
     const validationErrors = validateEmailData(emailData);
     if (validationErrors.length > 0) {
+      log.warn('Email validation failed', { errors: validationErrors, from: emailData.senderAddress, to: emailData.recipientEmail });
       res.status(400).json({
         error: {
           code: 'INVALID_EMAIL',
@@ -213,6 +220,7 @@ router.post('/inbound', async (req: Request, res: Response) => {
     const userResult = await userService.getUserByAddress(address);
 
     if (!userResult.success || !userResult.data) {
+      log.warn('Email discarded - mailbox not registered', { recipientEmail: emailData.recipientEmail, address });
       res.status(200).json({
         success: true,
         message: 'Email discarded - mailbox not registered',
@@ -223,14 +231,15 @@ router.post('/inbound', async (req: Request, res: Response) => {
     // Store email
     const storedEmail = await emailStorageService.storeEmail(emailData);
 
+    log.info('Email processed successfully', { emailId: storedEmail.id, from: emailData.senderAddress, to: emailData.recipientEmail });
+
     // Success response
     res.status(200).json({
       success: true,
       emailId: storedEmail.id,
     });
   } catch (error) {
-    // Log error for debugging
-    console.error('Webhook processing error:', error);
+    log.error('Webhook processing error', { error: error instanceof Error ? error.message : String(error) });
 
     // Check if it's an address resolution error
     if (

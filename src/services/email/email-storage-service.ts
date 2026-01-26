@@ -18,6 +18,9 @@ import {
   getOrCreateAddressId,
 } from '../../database/email-queries.js';
 import { getBlockchainProvider } from '../blockchain/provider-factory.js';
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('EmailStorage');
 import {
   Email,
   CreateEmailData,
@@ -206,7 +209,7 @@ export class EmailStorageService {
         bodyHtml: data.bodyHtml,
       })
       .catch((error) => {
-        console.error('[EmailStorageService] Failed to process forwarding rules:', {
+        log.error('Failed to process forwarding rules', {
           emailId: email.id,
           addressId: email.recipientAddressId,
           error: error instanceof Error ? error.message : String(error),

@@ -8,6 +8,9 @@
 
 import { getRedisClient } from '../cache/redis-client.js';
 import { rateLimitConfig, redisConfig } from '../../config/index.js';
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('RateLimiter');
 
 /**
  * Rate limit categories
@@ -133,7 +136,7 @@ export class RateLimiter {
 
       return result;
     } catch (error) {
-      console.error('Rate limiter Redis error, allowing request:', error);
+      log.warn('Rate limiter Redis error, allowing request', { error });
       // Graceful degradation - allow request if Redis fails
       return {
         allowed: true,
@@ -171,7 +174,7 @@ export class RateLimiter {
       const ttlSeconds = Math.ceil(windowMs / 1000) + 60; // Add 60s buffer
       await redis.expire(redisKey, ttlSeconds);
     } catch (error) {
-      console.error('Rate limiter increment error:', error);
+      log.warn('Rate limiter increment error', { error });
       // Silently fail - don't block request if we can't track
     }
   }
@@ -194,7 +197,7 @@ export class RateLimiter {
       const redisKey = buildRedisKey(options.category, options.key);
       await redis.del(redisKey);
     } catch (error) {
-      console.error('Rate limiter reset error:', error);
+      log.error('Rate limiter reset error', { error });
     }
   }
 
@@ -231,7 +234,7 @@ export class RateLimiter {
       await redis.zRemRangeByScore(redisKey, 0, windowStart);
       return await redis.zCard(redisKey);
     } catch (error) {
-      console.error('Rate limiter usage count error:', error);
+      log.warn('Rate limiter usage count error', { error });
       return 0;
     }
   }

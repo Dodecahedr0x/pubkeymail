@@ -9,6 +9,9 @@
 
 import Bull, { Queue, Job } from 'bull';
 import { config, isLocalDevMode } from '../../config/index.js';
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('EmailQueue');
 
 export interface EmailJobData {
   type: 'forward' | 'send' | 'cleanup';
@@ -40,7 +43,7 @@ class EmailQueue {
 
     // In local dev mode, queue operations are no-ops
     if (isLocalDevMode) {
-      console.log('📬 Email queue disabled in local dev mode');
+      log.info('Email queue disabled in local dev mode');
       this.isInitialized = true;
       return;
     }

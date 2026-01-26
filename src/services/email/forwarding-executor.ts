@@ -5,6 +5,9 @@
 
 import { db } from '../../database/connection.js';
 import { forwardingService, type ForwardingRule } from './forwarding-service.js';
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('ForwardingExecutor');
 
 /**
  * Incoming email data for processing
@@ -106,7 +109,7 @@ export class ForwardingExecutor {
 
       const forwardedSubject = `[Fwd] ${email.subject}`;
 
-      console.log('[ForwardingExecutor] Forwarding email:', {
+      log.info('Forwarding email', {
         from: sourceAddress,
         to: rule.destinationEmail,
         originalFrom: email.from,

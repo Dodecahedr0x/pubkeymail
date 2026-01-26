@@ -12,6 +12,9 @@
  */
 
 import { smtpConfig } from '../../config/index.js';
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('MailjetService');
 
 export interface ParseRouteData {
   ID: number;
@@ -93,7 +96,7 @@ export class MailjetParseRouteService {
 
       if (!response.ok) {
         const errorBody = await response.text();
-        console.error(`Mailjet parse route registration failed: ${response.status}`, errorBody);
+        log.error('Mailjet parse route registration failed', { status: response.status, body: errorBody });
         return {
           success: false,
           error: `Mailjet API error: ${response.status} - ${errorBody}`,
@@ -116,7 +119,7 @@ export class MailjetParseRouteService {
         error: 'No route data returned from Mailjet',
       };
     } catch (error) {
-      console.error('Failed to register Mailjet parse route:', error);
+      log.error('Failed to register Mailjet parse route', { error });
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -166,14 +169,14 @@ export class MailjetParseRouteService {
       });
 
       if (!response.ok) {
-        console.error(`Failed to list parse routes: ${response.status}`);
+        log.error('Failed to list parse routes', { status: response.status });
         return [];
       }
 
       const data = (await response.json()) as ParseRouteResponse;
       return data.Data || [];
     } catch (error) {
-      console.error('Failed to list Mailjet parse routes:', error);
+      log.error('Failed to list Mailjet parse routes', { error });
       return [];
     }
   }
@@ -194,7 +197,7 @@ export class MailjetParseRouteService {
 
       return response.ok || response.status === 404;
     } catch (error) {
-      console.error('Failed to delete Mailjet parse route:', error);
+      log.error('Failed to delete Mailjet parse route', { error, routeId });
       return false;
     }
   }

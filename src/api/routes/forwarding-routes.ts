@@ -13,7 +13,9 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { forwardingService } from '../../services/email/forwarding-service.js';
+import { createLogger } from '../../services/logger/index.js';
 
+const log = createLogger('ForwardingRoutes');
 const router: Router = Router();
 
 /**
@@ -79,9 +81,11 @@ const deleteRuleQuerySchema = z.object({
  */
 router.post('/rules', async (req: Request, res: Response) => {
   try {
+    log.debug('Creating forwarding rule', { body: req.body });
     const validation = createRuleSchema.safeParse(req.body);
 
     if (!validation.success) {
+      log.warn('Create rule validation failed', { issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -109,6 +113,7 @@ router.post('/rules', async (req: Request, res: Response) => {
         status = 403;
       }
 
+      log.warn('Create rule failed', { userId, sourceAddressId, error: result.error });
       res.status(status).json({
         error: {
           code: 'CREATE_FAILED',
@@ -118,12 +123,13 @@ router.post('/rules', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Forwarding rule created', { userId, ruleId: result.data?.id, sourceAddressId });
     res.status(201).json({
       success: true,
       rule: result.data,
     });
   } catch (error) {
-    console.error('Create forwarding rule error:', error);
+    log.error('Create forwarding rule error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -142,9 +148,11 @@ router.post('/rules', async (req: Request, res: Response) => {
  */
 router.get('/rules', async (req: Request, res: Response) => {
   try {
+    log.debug('Getting forwarding rules', { query: req.query });
     const validation = getRulesQuerySchema.safeParse(req.query);
 
     if (!validation.success) {
+      log.warn('Get rules validation failed', { issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -159,11 +167,12 @@ router.get('/rules', async (req: Request, res: Response) => {
 
     const rules = await forwardingService.getRules(userId);
 
+    log.info('Forwarding rules retrieved', { userId, count: rules.length });
     res.status(200).json({
       rules,
     });
   } catch (error) {
-    console.error('Get forwarding rules error:', error);
+    log.error('Get forwarding rules error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -188,8 +197,10 @@ router.get('/rules', async (req: Request, res: Response) => {
 router.put('/rules/:ruleId', async (req: Request, res: Response) => {
   try {
     const ruleId = parseInt(req.params['ruleId'] as string, 10);
+    log.debug('Updating forwarding rule', { ruleId, body: req.body });
 
     if (isNaN(ruleId) || ruleId <= 0) {
+      log.warn('Update rule invalid ruleId', { ruleId: req.params['ruleId'] });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -202,6 +213,7 @@ router.put('/rules/:ruleId', async (req: Request, res: Response) => {
     const validation = updateRuleSchema.safeParse(req.body);
 
     if (!validation.success) {
+      log.warn('Update rule validation failed', { ruleId, issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -228,6 +240,7 @@ router.put('/rules/:ruleId', async (req: Request, res: Response) => {
         status = 403;
       }
 
+      log.warn('Update rule failed', { ruleId, userId, error: result.error });
       res.status(status).json({
         error: {
           code: 'UPDATE_FAILED',
@@ -237,12 +250,13 @@ router.put('/rules/:ruleId', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Forwarding rule updated', { ruleId, userId });
     res.status(200).json({
       success: true,
       rule: result.data,
     });
   } catch (error) {
-    console.error('Update forwarding rule error:', error);
+    log.error('Update forwarding rule error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -262,8 +276,10 @@ router.put('/rules/:ruleId', async (req: Request, res: Response) => {
 router.delete('/rules/:ruleId', async (req: Request, res: Response) => {
   try {
     const ruleId = parseInt(req.params['ruleId'] as string, 10);
+    log.debug('Deleting forwarding rule', { ruleId, query: req.query });
 
     if (isNaN(ruleId) || ruleId <= 0) {
+      log.warn('Delete rule invalid ruleId', { ruleId: req.params['ruleId'] });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -276,6 +292,7 @@ router.delete('/rules/:ruleId', async (req: Request, res: Response) => {
     const validation = deleteRuleQuerySchema.safeParse(req.query);
 
     if (!validation.success) {
+      log.warn('Delete rule validation failed', { ruleId, issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -291,6 +308,7 @@ router.delete('/rules/:ruleId', async (req: Request, res: Response) => {
     const result = await forwardingService.deleteRule(ruleId, userId);
 
     if (!result.success) {
+      log.warn('Delete rule failed', { ruleId, userId, error: result.error });
       res.status(404).json({
         error: {
           code: 'DELETE_FAILED',
@@ -300,9 +318,10 @@ router.delete('/rules/:ruleId', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Forwarding rule deleted', { ruleId, userId });
     res.status(204).send();
   } catch (error) {
-    console.error('Delete forwarding rule error:', error);
+    log.error('Delete forwarding rule error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -319,8 +338,10 @@ router.delete('/rules/:ruleId', async (req: Request, res: Response) => {
 router.post('/verify/:token', async (req: Request, res: Response) => {
   try {
     const token = req.params['token'];
+    log.debug('Verifying forwarding destination', { token: token ? '***' : undefined });
 
     if (!token) {
+      log.warn('Verify destination missing token');
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -333,6 +354,7 @@ router.post('/verify/:token', async (req: Request, res: Response) => {
     const result = await forwardingService.verifyDestination(token);
 
     if (!result.success) {
+      log.warn('Verify destination failed', { error: result.error });
       res.status(400).json({
         error: {
           code: 'VERIFICATION_FAILED',
@@ -342,12 +364,13 @@ router.post('/verify/:token', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Forwarding destination verified', { ruleId: result.data?.id });
     res.status(200).json({
       success: true,
       rule: result.data,
     });
   } catch (error) {
-    console.error('Verify forwarding destination error:', error);
+    log.error('Verify forwarding destination error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',

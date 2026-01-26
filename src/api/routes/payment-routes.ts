@@ -15,7 +15,9 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { paymentService } from '../../services/payment/index.js';
 import type { SubscriptionPlan } from '../../services/payment/payment-service.js';
+import { createLogger } from '../../services/logger/index.js';
 
+const log = createLogger('PaymentRoutes');
 const router: Router = Router();
 
 /**
@@ -94,9 +96,11 @@ router.get('/providers', (_req: Request, res: Response) => {
  */
 router.post('/solana-pay/request', async (req: Request, res: Response) => {
   try {
+    log.debug('Creating Solana Pay request', { body: req.body });
     const validation = solanaPaySchema.safeParse(req.body);
 
     if (!validation.success) {
+      log.warn('Solana Pay request validation failed', { issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -116,6 +120,7 @@ router.post('/solana-pay/request', async (req: Request, res: Response) => {
 
     if (!result.success) {
       const status = result.error?.includes('not configured') ? 501 : 400;
+      log.warn('Solana Pay request failed', { userId, plan, error: result.error });
       res.status(status).json({
         error: {
           code: 'PAYMENT_REQUEST_FAILED',
@@ -125,9 +130,10 @@ router.post('/solana-pay/request', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Solana Pay request created', { userId, plan, reference: result.data?.reference });
     res.status(200).json(result.data);
   } catch (error) {
-    console.error('Solana Pay request error:', error);
+    log.error('Solana Pay request error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -149,12 +155,14 @@ router.post('/solana-pay/request', async (req: Request, res: Response) => {
  */
 router.post('/solana-pay/verify', async (req: Request, res: Response) => {
   try {
+    log.debug('Verifying Solana Pay transaction', { body: req.body });
     const { reference, signature } = req.body as {
       reference?: string;
       signature?: string;
     };
 
     if (!reference || !signature) {
+      log.warn('Solana Pay verification missing required fields', { reference: !!reference, signature: !!signature });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -167,6 +175,7 @@ router.post('/solana-pay/verify', async (req: Request, res: Response) => {
     const result = await paymentService.verifySolanaPayTransaction(reference, signature);
 
     if (!result.success) {
+      log.warn('Solana Pay verification failed', { reference, error: result.error });
       res.status(400).json({
         error: {
           code: 'VERIFICATION_FAILED',
@@ -176,12 +185,13 @@ router.post('/solana-pay/verify', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Solana Pay transaction verified', { reference, paymentId: result.paymentId });
     res.status(200).json({
       verified: true,
       paymentId: result.paymentId,
     });
   } catch (error) {
-    console.error('Solana Pay verification error:', error);
+    log.error('Solana Pay verification error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -206,8 +216,10 @@ router.post('/solana-pay/verify', async (req: Request, res: Response) => {
 router.get('/solana-pay/status/:reference', async (req: Request, res: Response) => {
   try {
     const { reference } = req.params;
+    log.debug('Getting Solana Pay status', { reference });
 
     if (!reference) {
+      log.warn('Solana Pay status request missing reference');
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -220,6 +232,7 @@ router.get('/solana-pay/status/:reference', async (req: Request, res: Response) 
     const result = await paymentService.getSolanaPayStatus(reference);
 
     if (!result.success) {
+      log.warn('Solana Pay status not found', { reference, error: result.error });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -229,9 +242,10 @@ router.get('/solana-pay/status/:reference', async (req: Request, res: Response) 
       return;
     }
 
+    log.info('Solana Pay status retrieved', { reference, status: result.data?.status });
     res.status(200).json(result.data);
   } catch (error) {
-    console.error('Solana Pay status error:', error);
+    log.error('Solana Pay status error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -252,9 +266,11 @@ router.get('/solana-pay/status/:reference', async (req: Request, res: Response) 
  */
 router.post('/cancel', async (req: Request, res: Response) => {
   try {
+    log.debug('Cancelling subscription', { body: req.body });
     const validation = cancelSchema.safeParse(req.body);
 
     if (!validation.success) {
+      log.warn('Subscription cancellation validation failed', { issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -270,6 +286,7 @@ router.post('/cancel', async (req: Request, res: Response) => {
     const result = await paymentService.cancelSubscription(userId);
 
     if (!result.success) {
+      log.warn('Subscription cancellation failed', { userId, error: result.error });
       res.status(400).json({
         error: {
           code: 'CANCELLATION_FAILED',
@@ -279,11 +296,12 @@ router.post('/cancel', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Subscription cancelled', { userId });
     res.status(200).json({
       message: 'Subscription cancelled successfully',
     });
   } catch (error) {
-    console.error('Subscription cancellation error:', error);
+    log.error('Subscription cancellation error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',

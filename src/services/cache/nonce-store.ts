@@ -9,6 +9,9 @@
 
 import { getRedisClient } from './redis-client.js';
 import { config } from '../../config/index.js';
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('NonceStore');
 
 export interface StoredNonce {
   nonce: string;
@@ -48,7 +51,7 @@ export async function getNonce(nonce: string): Promise<StoredNonce | null> {
   try {
     return JSON.parse(data) as StoredNonce;
   } catch (error) {
-    console.error('Failed to parse nonce data:', error);
+    log.error('Failed to parse nonce data', { error });
     return null;
   }
 }

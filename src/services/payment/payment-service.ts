@@ -10,6 +10,9 @@
 
 import { config } from '../../config/index.js';
 import { userService } from '../user/index.js';
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('PaymentService');
 
 /**
  * Payment provider types
@@ -215,7 +218,7 @@ export class PaymentService {
       // 6. Verify reference is present in transaction
       // 7. Ensure transaction hasn't been used before (idempotency)
 
-      console.log('Verifying Solana Pay transaction:', { reference, signature });
+      log.debug('Verifying Solana Pay transaction', { reference, signature });
 
       if (userId && plan) {
         const now = new Date();

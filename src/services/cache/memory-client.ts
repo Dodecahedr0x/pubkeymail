@@ -5,6 +5,10 @@
  * Implements the same interface used by the application with Redis.
  */
 
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('MemoryCache');
+
 interface StoredValue {
   value: string;
   expiresAt: number | null;
@@ -20,13 +24,13 @@ class MemoryCacheClient {
 
   async connect(): Promise<void> {
     this._isOpen = true;
-    console.log('Memory cache client connected');
+    log.info('Memory cache client connected');
   }
 
   async quit(): Promise<void> {
     this._isOpen = false;
     this.store.clear();
-    console.log('Memory cache client disconnected');
+    log.info('Memory cache client disconnected');
   }
 
   async ping(): Promise<string> {

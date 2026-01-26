@@ -27,6 +27,9 @@ import {
   NameResolutionError,
 } from '../../types/blockchain.js';
 import { solanaConfig } from '../../config/index.js';
+import { createLogger } from '../logger/index.js';
+
+const log = createLogger('SolanaProvider');
 
 /**
  * Solana blockchain provider implementation
@@ -362,7 +365,7 @@ export class SolanaProvider implements IBlockchainProvider {
 
       return domainNames.filter((name): name is string => name !== null);
     } catch (error) {
-      console.error('Failed to get domains for wallet:', error);
+      log.error('Failed to get domains for wallet', { error });
       return [];
     }
   }

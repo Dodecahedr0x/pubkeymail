@@ -8,12 +8,15 @@
 
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 import { databaseConfig, isLocalDevMode } from '../config/index.js';
+import { createLogger } from '../services/logger/index.js';
 import {
   getMemoryDatabase,
   initMemoryDatabase,
   closeMemoryDatabase,
   type MemoryDatabase,
 } from './memory-db.js';
+
+const log = createLogger('Database');
 
 interface DatabaseInterface {
   query<T extends QueryResultRow = QueryResultRow>(
@@ -42,7 +45,7 @@ class PostgresPool implements DatabaseInterface {
       });
 
       this.pool.on('error', (err) => {
-        console.error('Unexpected database pool error:', err);
+        log.error('Unexpected database pool error', { error: err });
       });
     }
 
@@ -135,7 +138,7 @@ class DatabasePool {
 
   constructor() {
     if (isLocalDevMode) {
-      console.log('🧪 Using in-memory database (local dev mode)');
+      log.info('Using in-memory database (local dev mode)');
       this.implementation = new MemoryDatabaseAdapter();
     } else {
       this.implementation = new PostgresPool();

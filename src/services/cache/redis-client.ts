@@ -12,12 +12,15 @@
 
 import { createClient } from 'redis';
 import { config, isLocalDevMode } from '../../config/index.js';
+import { createLogger } from '../logger/index.js';
 import {
   getMemoryCacheClient,
   initMemoryCacheClient,
   disconnectMemoryCache,
   type MemoryCacheClient,
 } from './memory-client.js';
+
+const log = createLogger('RedisClient');
 
 type RedisClient = ReturnType<typeof createClient>;
 type CacheClient = RedisClient | MemoryCacheClient;
@@ -54,7 +57,7 @@ export async function getRedisClient(): Promise<CacheClient> {
       socket: {
         reconnectStrategy: (retries) => {
           if (retries > 10) {
-            console.error('Redis reconnection failed after 10 attempts');
+            log.error('Redis reconnection failed after 10 attempts');
             return new Error('Redis connection failed');
           }
           // Exponential backoff: 100ms, 200ms, 400ms, etc.
@@ -65,19 +68,19 @@ export async function getRedisClient(): Promise<CacheClient> {
 
     // Error handling
     client.on('error', (err) => {
-      console.error('Redis Client Error:', err);
+      log.error('Redis Client Error', { error: err });
     });
 
     client.on('connect', () => {
-      console.log('Redis client connected');
+      log.info('Redis client connected');
     });
 
     client.on('ready', () => {
-      console.log('Redis client ready');
+      log.debug('Redis client ready');
     });
 
     client.on('reconnecting', () => {
-      console.log('Redis client reconnecting...');
+      log.warn('Redis client reconnecting...');
     });
 
     await client.connect();
@@ -88,7 +91,7 @@ export async function getRedisClient(): Promise<CacheClient> {
     return client;
   } catch (error) {
     isConnecting = false;
-    console.error('Failed to connect to Redis:', error);
+    log.error('Failed to connect to Redis', { error });
     throw error;
   }
 }
@@ -105,7 +108,7 @@ export async function disconnectRedis(): Promise<void> {
   if (redisClient && redisClient.isOpen) {
     await redisClient.quit();
     redisClient = null;
-    console.log('Redis client disconnected');
+    log.info('Redis client disconnected');
   }
 }
 
@@ -129,7 +132,7 @@ export async function pingRedis(): Promise<boolean> {
     const result = await client.ping();
     return result === 'PONG';
   } catch (error) {
-    console.error('Cache ping failed:', error);
+    log.error('Cache ping failed', { error });
     return false;
   }
 }

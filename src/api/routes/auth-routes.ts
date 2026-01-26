@@ -15,6 +15,9 @@ import { isBlockchainSupported } from '../../services/blockchain/provider-factor
 import { bruteForceProtection } from '../../services/security/index.js';
 import { rateLimiter } from '../../services/security/index.js';
 import { auditLogger } from '../../services/security/index.js';
+import { createLogger } from '../../services/logger/index.js';
+
+const log = createLogger('AuthRoutes');
 
 const router: Router = Router();
 
@@ -55,6 +58,8 @@ const verifyRequestSchema = z.object({
  */
 router.post('/challenge', async (req: Request, res: Response) => {
   const clientIp = req.ip || req.headers['x-forwarded-for']?.toString().split(',')[0] || 'unknown';
+
+  log.debug('Challenge request received', { ip: clientIp });
 
   try {
     // Validate request body
@@ -117,6 +122,8 @@ router.post('/challenge', async (req: Request, res: Response) => {
       blockchain as BlockchainType
     );
 
+    log.info('Auth challenge generated', { address, blockchain });
+
     // Log challenge request
     auditLogger.log({
       eventType: 'AUTH_CHALLENGE_REQUESTED',
@@ -131,6 +138,7 @@ router.post('/challenge', async (req: Request, res: Response) => {
 
     res.status(200).json(challengeResponse);
   } catch (error) {
+    log.error('Failed to generate challenge', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: {
         code: 'SERVER_ERROR',
@@ -172,6 +180,8 @@ router.post('/challenge', async (req: Request, res: Response) => {
  */
 router.post('/verify', async (req: Request, res: Response) => {
   const clientIp = req.ip || req.headers['x-forwarded-for']?.toString().split(',')[0] || 'unknown';
+
+  log.debug('Verify request received', { ip: clientIp });
 
   try {
     // Validate request body
@@ -238,6 +248,8 @@ router.post('/verify', async (req: Request, res: Response) => {
       // Record failed attempt for brute force protection
       await bruteForceProtection.recordFailedAttempt(address, 'address');
 
+      log.warn('Auth verification failed', { address, blockchain, error: result.error });
+
       auditLogger.log({
         eventType: 'AUTH_CHALLENGE_FAILED',
         actorType: 'anonymous',
@@ -261,6 +273,8 @@ router.post('/verify', async (req: Request, res: Response) => {
     // Success - reset brute force counter
     await bruteForceProtection.resetAttempts(address, 'address');
 
+    log.info('Auth verified successfully', { address, blockchain });
+
     // Log successful authentication
     auditLogger.log({
       eventType: 'AUTH_CHALLENGE_VERIFIED',
@@ -283,6 +297,7 @@ router.post('/verify', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
+    log.error('Auth verification error', { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({
       error: {
         code: 'SERVER_ERROR',

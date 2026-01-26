@@ -17,7 +17,9 @@ import {
   authMiddleware,
   AuthenticatedRequest,
 } from '../middleware/auth-middleware.js';
+import { createLogger } from '../../services/logger/index.js';
 
+const log = createLogger('ComplianceRoutes');
 const router: Router = Router();
 
 /**
@@ -52,8 +54,10 @@ const deletionRequestSchema = z.object({
  */
 router.post('/export', authMiddleware, async (req: Request, res: Response) => {
   try {
+    log.debug('Requesting data export');
     const authReq = req as AuthenticatedRequest;
     if (!authReq.user) {
+      log.warn('Export request without authentication');
       res.status(401).json({
         error: {
           code: 'UNAUTHORIZED',
@@ -65,6 +69,7 @@ router.post('/export', authMiddleware, async (req: Request, res: Response) => {
 
     const userId = await getUserIdFromAddress(authReq.user.address);
     if (!userId) {
+      log.warn('Export request for unknown user', { address: authReq.user.address });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -76,11 +81,12 @@ router.post('/export', authMiddleware, async (req: Request, res: Response) => {
 
     const exportData = await gdprService.exportUserData(userId);
 
+    log.info('User data exported', { userId });
     res.status(200).json({
       export: exportData,
     });
   } catch (error) {
-    console.error('Export error:', error);
+    log.error('Export error', { error });
     res.status(500).json({
       error: {
         code: 'EXPORT_FAILED',
@@ -116,8 +122,10 @@ router.post('/export', authMiddleware, async (req: Request, res: Response) => {
  */
 router.post('/delete', authMiddleware, async (req: Request, res: Response) => {
   try {
+    log.debug('Requesting account deletion', { body: req.body });
     const authReq = req as AuthenticatedRequest;
     if (!authReq.user) {
+      log.warn('Deletion request without authentication');
       res.status(401).json({
         error: {
           code: 'UNAUTHORIZED',
@@ -129,6 +137,7 @@ router.post('/delete', authMiddleware, async (req: Request, res: Response) => {
 
     const validation = deletionRequestSchema.safeParse(req.body);
     if (!validation.success) {
+      log.warn('Deletion request validation failed', { issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -141,6 +150,7 @@ router.post('/delete', authMiddleware, async (req: Request, res: Response) => {
 
     const userId = await getUserIdFromAddress(authReq.user.address);
     if (!userId) {
+      log.warn('Deletion request for unknown user', { address: authReq.user.address });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -156,6 +166,7 @@ router.post('/delete', authMiddleware, async (req: Request, res: Response) => {
       const result = await gdprService.deleteUserData(userId);
 
       if (!result.success) {
+        log.warn('Immediate deletion failed', { userId, errors: result.errors });
         res.status(500).json({
           error: {
             code: 'DELETION_FAILED',
@@ -166,6 +177,7 @@ router.post('/delete', authMiddleware, async (req: Request, res: Response) => {
         return;
       }
 
+      log.info('Account deleted immediately', { userId, deletedResources: result.deletedResources });
       res.status(200).json({
         message: 'Account deleted',
         deletedResources: result.deletedResources,
@@ -173,13 +185,14 @@ router.post('/delete', authMiddleware, async (req: Request, res: Response) => {
     } else {
       const result = await gdprService.scheduleDeletion(userId, gracePeriodDays);
 
+      log.info('Deletion scheduled', { userId, scheduledFor: result.scheduledFor });
       res.status(200).json({
         message: 'Deletion scheduled',
         scheduledFor: result.scheduledFor,
       });
     }
   } catch (error) {
-    console.error('Deletion error:', error);
+    log.error('Deletion error', { error });
 
     if (error instanceof Error && error.message === 'Deletion already scheduled') {
       res.status(409).json({
@@ -214,8 +227,10 @@ router.post('/delete', authMiddleware, async (req: Request, res: Response) => {
  */
 router.get('/deletion-status', authMiddleware, async (req: Request, res: Response) => {
   try {
+    log.debug('Checking deletion status');
     const authReq = req as AuthenticatedRequest;
     if (!authReq.user) {
+      log.warn('Deletion status check without authentication');
       res.status(401).json({
         error: {
           code: 'UNAUTHORIZED',
@@ -227,6 +242,7 @@ router.get('/deletion-status', authMiddleware, async (req: Request, res: Respons
 
     const userId = await getUserIdFromAddress(authReq.user.address);
     if (!userId) {
+      log.warn('Deletion status check for unknown user', { address: authReq.user.address });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -239,6 +255,7 @@ router.get('/deletion-status', authMiddleware, async (req: Request, res: Respons
     const status = await gdprService.getDeletionStatus(userId);
 
     if (!status) {
+      log.warn('Deletion status not found', { userId });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -248,9 +265,10 @@ router.get('/deletion-status', authMiddleware, async (req: Request, res: Respons
       return;
     }
 
+    log.info('Deletion status retrieved', { userId, scheduled: status.scheduled });
     res.status(200).json(status);
   } catch (error) {
-    console.error('Status check error:', error);
+    log.error('Status check error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -281,8 +299,10 @@ router.get('/deletion-status', authMiddleware, async (req: Request, res: Respons
  */
 router.delete('/deletion', authMiddleware, async (req: Request, res: Response) => {
   try {
+    log.debug('Cancelling scheduled deletion');
     const authReq = req as AuthenticatedRequest;
     if (!authReq.user) {
+      log.warn('Cancel deletion without authentication');
       res.status(401).json({
         error: {
           code: 'UNAUTHORIZED',
@@ -294,6 +314,7 @@ router.delete('/deletion', authMiddleware, async (req: Request, res: Response) =
 
     const userId = await getUserIdFromAddress(authReq.user.address);
     if (!userId) {
+      log.warn('Cancel deletion for unknown user', { address: authReq.user.address });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -306,6 +327,7 @@ router.delete('/deletion', authMiddleware, async (req: Request, res: Response) =
     const cancelled = await gdprService.cancelScheduledDeletion(userId);
 
     if (!cancelled) {
+      log.warn('No scheduled deletion to cancel', { userId });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -315,11 +337,12 @@ router.delete('/deletion', authMiddleware, async (req: Request, res: Response) =
       return;
     }
 
+    log.info('Scheduled deletion cancelled', { userId });
     res.status(200).json({
       message: 'Scheduled deletion cancelled',
     });
   } catch (error) {
-    console.error('Cancel deletion error:', error);
+    log.error('Cancel deletion error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',

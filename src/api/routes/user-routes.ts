@@ -14,6 +14,9 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { userService } from '../../services/user/index.js';
 import type { BlockchainType } from '../../types/blockchain.js';
+import { createLogger } from '../../services/logger/index.js';
+
+const log = createLogger('UserRoutes');
 
 const router: Router = Router();
 
@@ -60,9 +63,11 @@ const linkAddressSchema = z.object({
  */
 router.post('/register', async (req: Request, res: Response) => {
   try {
+    log.debug('Registration request received', { body: req.body });
     const validation = registerSchema.safeParse(req.body);
 
     if (!validation.success) {
+      log.warn('Registration validation failed', { issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -81,8 +86,8 @@ router.post('/register', async (req: Request, res: Response) => {
     });
 
     if (!result.success) {
-      // Check if user already exists
       if (result.error?.includes('already registered')) {
+        log.warn('User already registered', { address });
         res.status(409).json({
           error: {
             code: 'USER_EXISTS',
@@ -92,6 +97,7 @@ router.post('/register', async (req: Request, res: Response) => {
         return;
       }
 
+      log.error('Registration failed', { address, error: result.error });
       res.status(500).json({
         error: {
           code: 'REGISTRATION_FAILED',
@@ -101,6 +107,7 @@ router.post('/register', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('User registered successfully', { userId: result.data!.id, address });
     res.status(201).json({
       user: {
         id: result.data!.id,
@@ -112,7 +119,7 @@ router.post('/register', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    log.error('Registration error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -134,8 +141,10 @@ router.post('/register', async (req: Request, res: Response) => {
 router.get('/check/:address', async (req: Request, res: Response) => {
   try {
     const address = req.params['address'];
+    log.debug('Check address request', { address });
 
     if (!address) {
+      log.warn('Check address missing address param');
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -146,12 +155,13 @@ router.get('/check/:address', async (req: Request, res: Response) => {
     }
 
     const registered = await userService.isAddressRegistered(address);
+    log.debug('Address check result', { address, registered });
 
     res.status(200).json({
       registered,
     });
   } catch (error) {
-    console.error('Check address error:', error);
+    log.error('Check address error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -178,8 +188,10 @@ router.get('/check/:address', async (req: Request, res: Response) => {
 router.get('/profile/:address', async (req: Request, res: Response) => {
   try {
     const address = req.params['address'];
+    log.debug('Get profile request', { address });
 
     if (!address) {
+      log.warn('Get profile missing address param');
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -192,6 +204,7 @@ router.get('/profile/:address', async (req: Request, res: Response) => {
     const result = await userService.getUserByAddress(address);
 
     if (!result.success) {
+      log.debug('User not found', { address });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -201,6 +214,7 @@ router.get('/profile/:address', async (req: Request, res: Response) => {
       return;
     }
 
+    log.debug('Profile retrieved', { userId: result.data!.id, address });
     res.status(200).json({
       user: {
         id: result.data!.id,
@@ -217,7 +231,7 @@ router.get('/profile/:address', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Get profile error:', error);
+    log.error('Get profile error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -244,8 +258,10 @@ router.get('/profile/:address', async (req: Request, res: Response) => {
 router.post('/:userId/link-address', async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params['userId'] || '0', 10);
+    log.debug('Link address request', { userId, body: req.body });
 
     if (!userId || isNaN(userId)) {
+      log.warn('Link address invalid userId', { userId: req.params['userId'] });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -258,6 +274,7 @@ router.post('/:userId/link-address', async (req: Request, res: Response) => {
     const validation = linkAddressSchema.safeParse(req.body);
 
     if (!validation.success) {
+      log.warn('Link address validation failed', { userId, issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -278,6 +295,7 @@ router.post('/:userId/link-address', async (req: Request, res: Response) => {
 
     if (!result.success) {
       const status = result.error?.includes('already linked') ? 409 : 400;
+      log.warn('Link address failed', { userId, address, error: result.error });
       res.status(status).json({
         error: {
           code: 'LINK_FAILED',
@@ -287,6 +305,7 @@ router.post('/:userId/link-address', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Address linked successfully', { userId, address, linkedAddressId: result.data!.id });
     res.status(201).json({
       linkedAddress: {
         id: result.data!.id,
@@ -296,7 +315,7 @@ router.post('/:userId/link-address', async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Link address error:', error);
+    log.error('Link address error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -314,8 +333,10 @@ router.delete('/:userId/addresses/:addressId', async (req: Request, res: Respons
   try {
     const userId = parseInt(req.params['userId'] || '0', 10);
     const addressId = parseInt(req.params['addressId'] || '0', 10);
+    log.debug('Unlink address request', { userId, addressId });
 
     if (!userId || isNaN(userId) || !addressId || isNaN(addressId)) {
+      log.warn('Unlink address invalid params', { userId: req.params['userId'], addressId: req.params['addressId'] });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -329,6 +350,7 @@ router.delete('/:userId/addresses/:addressId', async (req: Request, res: Respons
 
     if (!result.success) {
       const status = result.error?.includes('primary') ? 400 : 404;
+      log.warn('Unlink address failed', { userId, addressId, error: result.error });
       res.status(status).json({
         error: {
           code: 'UNLINK_FAILED',
@@ -338,11 +360,12 @@ router.delete('/:userId/addresses/:addressId', async (req: Request, res: Respons
       return;
     }
 
+    log.info('Address unlinked successfully', { userId, addressId });
     res.status(200).json({
       message: 'Address unlinked successfully',
     });
   } catch (error) {
-    console.error('Unlink address error:', error);
+    log.error('Unlink address error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',

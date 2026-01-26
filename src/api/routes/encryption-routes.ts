@@ -15,7 +15,9 @@ import {
   authMiddleware,
   AuthenticatedRequest,
 } from '../middleware/auth-middleware.js';
+import { createLogger } from '../../services/logger/index.js';
 
+const log = createLogger('EncryptionRoutes');
 const router: Router = Router();
 
 /**
@@ -58,8 +60,10 @@ async function getUserIdFromAddress(address: string): Promise<number | null> {
  */
 router.post('/keys', authMiddleware, async (req: Request, res: Response) => {
   try {
+    log.debug('Registering encryption key');
     const authReq = req as AuthenticatedRequest;
     if (!authReq.user) {
+      log.warn('Key registration without authentication');
       res.status(401).json({
         error: {
           code: 'UNAUTHORIZED',
@@ -71,6 +75,7 @@ router.post('/keys', authMiddleware, async (req: Request, res: Response) => {
 
     const validation = registerKeySchema.safeParse(req.body);
     if (!validation.success) {
+      log.warn('Key registration validation failed', { issues: validation.error.issues });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -83,6 +88,7 @@ router.post('/keys', authMiddleware, async (req: Request, res: Response) => {
 
     const userId = await getUserIdFromAddress(authReq.user.address);
     if (!userId) {
+      log.warn('Key registration for unknown user', { address: authReq.user.address });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -95,12 +101,13 @@ router.post('/keys', authMiddleware, async (req: Request, res: Response) => {
     const { publicKey } = validation.data;
     await encryptionService.storeUserPublicKey(userId, publicKey);
 
+    log.info('Encryption key registered', { userId });
     res.status(200).json({
       success: true,
       message: 'Encryption key registered',
     });
   } catch (error) {
-    console.error('Register encryption key error:', error);
+    log.error('Register encryption key error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',
@@ -133,8 +140,10 @@ router.post('/keys', authMiddleware, async (req: Request, res: Response) => {
 router.get('/keys/:address', async (req: Request, res: Response) => {
   try {
     const address = req.params['address'];
+    log.debug('Getting encryption key', { address });
 
     if (!address) {
+      log.warn('Get key missing address');
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
@@ -147,6 +156,7 @@ router.get('/keys/:address', async (req: Request, res: Response) => {
     const publicKey = await encryptionService.getPublicKeyByAddress(address);
 
     if (!publicKey) {
+      log.warn('Encryption key not found', { address });
       res.status(404).json({
         error: {
           code: 'NOT_FOUND',
@@ -156,12 +166,13 @@ router.get('/keys/:address', async (req: Request, res: Response) => {
       return;
     }
 
+    log.info('Encryption key retrieved', { address });
     res.status(200).json({
       publicKey,
       encryptionSupported: true,
     });
   } catch (error) {
-    console.error('Get encryption key error:', error);
+    log.error('Get encryption key error', { error });
     res.status(500).json({
       error: {
         code: 'INTERNAL_ERROR',

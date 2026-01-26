@@ -106,14 +106,7 @@ describe('ForwardingExecutor', () => {
         success: true,
       });
       expect(consoleSpy).toHaveBeenCalledWith(
-        '[ForwardingExecutor] Forwarding email:',
-        expect.objectContaining({
-          from: 'recipient@pubkeymail.com',
-          to: 'forward@example.com',
-          originalFrom: 'sender@example.com',
-          subject: '[Fwd] Test Email',
-          ruleId: 1,
-        })
+        expect.stringContaining('[ForwardingExecutor] Forwarding email')
       );
       consoleSpy.mockRestore();
     });

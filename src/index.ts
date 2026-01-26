@@ -8,6 +8,9 @@
 import express, { Application, Request, Response, NextFunction } from 'express';
 import { config, isLocalDevMode } from './config/index.js';
 import { emailCleanupScheduler } from './services/email/cleanup-scheduler.js';
+import { createLogger } from './services/logger/index.js';
+
+const log = createLogger('Server');
 
 // Import routes
 import authRoutes from './api/routes/auth-routes.js';
@@ -67,13 +70,11 @@ function createApp(): Application {
     next();
   });
 
-  // Request logging (development)
-  if (config.NODE_ENV === 'development') {
-    app.use((req: Request, _res: Response, next: NextFunction) => {
-      console.log(`${new Date().toISOString()} ${req.method} ${req.path}`);
-      next();
-    });
-  }
+  // Request logging
+  app.use((req: Request, _res: Response, next: NextFunction) => {
+    log.debug('Incoming request', { method: req.method, path: req.path });
+    next();
+  });
 
   // API Routes
   const apiPrefix = `/api/${config.API_VERSION}`;
@@ -130,7 +131,7 @@ function createApp(): Application {
 
   // Error handler
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error('Unhandled error:', err);
+    log.error('Unhandled error', { error: err.message, stack: err.stack });
 
     res.status(500).json({
       error: {
@@ -159,7 +160,7 @@ async function startServer(): Promise<void> {
       enabled: true,
       runOnStartup: false,
     });
-    console.log('Email cleanup scheduler started');
+    log.info('Email cleanup scheduler started');
   }
 
   // Start HTTP server
@@ -167,35 +168,31 @@ async function startServer(): Promise<void> {
     const modeInfo = isLocalDevMode
       ? '🧪 LOCAL DEV (in-memory)'
       : config.NODE_ENV;
-    console.log(`
-╔═══════════════════════════════════════════════════════════════╗
-║                       PubKeyMail API                          ║
-╠═══════════════════════════════════════════════════════════════╣
-║  Status:    Running                                           ║
-║  Port:      ${port.toString().padEnd(50)}║
-║  Mode:      ${modeInfo.padEnd(50)}║
-║  API:       http://localhost:${port}/api/${config.API_VERSION.padEnd(32)}║
-║  Health:    http://localhost:${port}/health${''.padEnd(27)}║
-╚═══════════════════════════════════════════════════════════════╝
-    `);
+    log.info('Server started', {
+      port,
+      mode: modeInfo,
+      api: `http://localhost:${port}/api/${config.API_VERSION}`,
+      health: `http://localhost:${port}/health`,
+      logLevel: config.LOG_LEVEL,
+    });
   });
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {
-    console.log(`\nReceived ${signal}. Shutting down gracefully...`);
+    log.info('Shutdown initiated', { signal });
 
     // Stop accepting new connections
     server.close(() => {
-      console.log('HTTP server closed');
+      log.info('HTTP server closed');
     });
 
     // Stop cleanup scheduler
     emailCleanupScheduler.stop();
-    console.log('Cleanup scheduler stopped');
+    log.info('Cleanup scheduler stopped');
 
     // Give ongoing requests time to complete
     setTimeout(() => {
-      console.log('Shutdown complete');
+      log.info('Shutdown complete');
       process.exit(0);
     }, 5000);
   };
@@ -206,7 +203,7 @@ async function startServer(): Promise<void> {
 
 // Start server if this is the main module
 startServer().catch((error) => {
-  console.error('Failed to start server:', error);
+  log.fatal('Failed to start server', { error: error.message, stack: error.stack });
   process.exit(1);
 });
 
