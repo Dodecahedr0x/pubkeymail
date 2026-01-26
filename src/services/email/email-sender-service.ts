@@ -11,7 +11,6 @@
 import { db } from '../../database/connection.js';
 import { smtpConfig, config } from '../../config/index.js';
 import { userService } from '../user/index.js';
-import { mailjetParseRouteService } from './mailjet-parse-route-service.js';
 import type { BlockchainType } from '../../types/blockchain.js';
 
 /**
@@ -185,11 +184,6 @@ export class EmailSenderService {
       // Increment rate limit counter
       await this.incrementRateLimitCounter(input.fromAddressId);
 
-      // If recipient is a @pubkeymail.com address, create mailbox for them
-      this.ensureRecipientMailbox(input.toAddress).catch((error) => {
-        console.error('Failed to create recipient mailbox:', error);
-      });
-
       return {
         success: true,
         messageId: sendResult.messageId,
@@ -205,34 +199,6 @@ export class EmailSenderService {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error sending email',
       };
-    }
-  }
-
-  /**
-   * Ensure a mailbox exists for a @pubkeymail.com recipient
-   * Creates parse routes for the recipient address if they don't exist
-   *
-   * @param recipientEmail - Full email address of recipient
-   */
-  private async ensureRecipientMailbox(recipientEmail: string): Promise<void> {
-    // Only process @pubkeymail.com addresses
-    const emailLower = recipientEmail.toLowerCase();
-    if (!emailLower.endsWith(`@${this.fromDomain}`)) {
-      return;
-    }
-
-    // Extract local part (wallet address or domain name)
-    const localPart = recipientEmail.split('@')[0];
-    if (!localPart) {
-      return;
-    }
-
-    // Register parse route for this address
-    const result = await mailjetParseRouteService.registerParseRoute(localPart);
-    if (result.success) {
-      console.log(`Created mailbox for recipient: ${recipientEmail}`);
-    } else {
-      console.warn(`Failed to create mailbox for recipient ${recipientEmail}: ${result.error}`);
     }
   }
 

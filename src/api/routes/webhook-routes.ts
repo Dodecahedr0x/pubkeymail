@@ -8,7 +8,7 @@
 
 import { Router, Request, Response } from 'express';
 import { createHmac, timingSafeEqual } from 'crypto';
-import { emailStorageService } from '../../services/email/index.js';
+import { emailStorageService, resolveEmailToBlockchainAddress } from '../../services/email/index.js';
 import {
   parseWebhookEmail,
   webhookToCreateEmailData,
@@ -16,6 +16,7 @@ import {
   sanitizeHtmlContent,
 } from '../../services/email/webhook-parser.js';
 import { smtpConfig } from '../../config/index.js';
+import { userService } from '../../services/user/index.js';
 
 const router: Router = Router();
 
@@ -203,6 +204,18 @@ router.post('/inbound', async (req: Request, res: Response) => {
           message: 'Email validation failed',
           details: validationErrors,
         },
+      });
+      return;
+    }
+
+    // Resolve recipient to blockchain address and check if mailbox is registered
+    const { address } = await resolveEmailToBlockchainAddress(emailData.recipientEmail);
+    const userResult = await userService.getUserByAddress(address);
+
+    if (!userResult.success || !userResult.data) {
+      res.status(200).json({
+        success: true,
+        message: 'Email discarded - mailbox not registered',
       });
       return;
     }
