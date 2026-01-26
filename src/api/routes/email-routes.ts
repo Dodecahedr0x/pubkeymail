@@ -136,6 +136,55 @@ router.get('/mailbox/:userId', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /emails/mailbox/:userId/:emailId
+ * Get a specific received email by ID
+ */
+router.get('/mailbox/:userId/:emailId', async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params['userId'] || '0', 10);
+    const emailId = req.params['emailId'];
+    log.debug('Get received email request', { userId, emailId });
+
+    if (!userId || isNaN(userId) || !emailId) {
+      log.warn('Invalid userId or emailId in get received email request', { userId, emailId });
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Valid userId and emailId are required',
+        },
+      });
+      return;
+    }
+
+    const result = await addressLinkingService.getEmailById(userId, emailId);
+
+    if (!result.success) {
+      const status = result.error?.includes('not found') ? 404 : 400;
+      res.status(status).json({
+        error: {
+          code: status === 404 ? 'NOT_FOUND' : 'FETCH_FAILED',
+          message: result.error || 'Failed to fetch email',
+        },
+      });
+      return;
+    }
+
+    log.info('Received email retrieved successfully', { userId, emailId });
+    res.status(200).json({
+      email: result.data,
+    });
+  } catch (error) {
+    log.error('Get received email error', { error });
+    res.status(500).json({
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'An unexpected error occurred',
+      },
+    });
+  }
+});
+
+/**
  * Attachment schema
  */
 const attachmentSchema = z.object({

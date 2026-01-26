@@ -373,6 +373,107 @@ export class AddressLinkingService {
       };
     }
   }
+
+  /**
+   * Get a single received email by ID for a user
+   * Checks all linked addresses to ensure the user owns the email
+   *
+   * @param userId - User ID
+   * @param emailId - Email UUID
+   * @returns Email with full body content
+   */
+  async getEmailById(
+    userId: number,
+    emailId: string
+  ): Promise<AddressLinkingResult<{
+    id: string;
+    from: string;
+    to: string;
+    subject: string | null;
+    bodyText: string | null;
+    bodyHtml: string | null;
+    receivedAt: Date;
+    read: boolean;
+  }>> {
+    try {
+      // Get all user's address IDs (primary + linked)
+      const addressResult = await db.query<{ address_id: number; address: string }>(
+        `SELECT primary_address_id as address_id, ba.address
+         FROM users u
+         JOIN blockchain_addresses ba ON u.primary_address_id = ba.id
+         WHERE u.id = $1
+         UNION
+         SELECT al.address_id, ba.address
+         FROM address_links al
+         JOIN blockchain_addresses ba ON al.address_id = ba.id
+         WHERE al.user_id = $1`,
+        [userId]
+      );
+
+      if (addressResult.rows.length === 0) {
+        return {
+          success: false,
+          error: 'User not found',
+        };
+      }
+
+      const addressIds = addressResult.rows.map((r) => r.address_id);
+
+      // Get the email if it belongs to any of the user's addresses
+      const emailResult = await db.query<{
+        id: string;
+        sender_email: string;
+        subject: string | null;
+        body_text: string | null;
+        body_html: string | null;
+        received_at: Date;
+        read: boolean;
+        address: string;
+      }>(
+        `SELECT e.id, e.sender_email, e.subject, e.body_text, e.body_html, e.received_at, e.read, ba.address
+         FROM emails e
+         JOIN blockchain_addresses ba ON e.recipient_address_id = ba.id
+         WHERE e.id = $1 AND e.recipient_address_id = ANY($2)`,
+        [emailId, addressIds]
+      );
+
+      if (emailResult.rows.length === 0) {
+        return {
+          success: false,
+          error: 'Email not found',
+        };
+      }
+
+      const row = emailResult.rows[0]!;
+
+      // Mark as read if not already
+      if (!row.read) {
+        await db.query(
+          'UPDATE emails SET read = true WHERE id = $1',
+          [emailId]
+        );
+      }
+
+      return {
+        success: true,
+        data: {
+          id: row.id,
+          from: row.sender_email,
+          to: row.address,
+          subject: row.subject,
+          bodyText: row.body_text,
+          bodyHtml: row.body_html,
+          receivedAt: row.received_at,
+          read: true, // Return true since we just marked it
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
 }
 
 /**

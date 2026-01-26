@@ -6,11 +6,13 @@ import Link from 'next/link';
 import * as emailsApi from '@/lib/api/emails';
 import type { Email } from '@/lib/api/emails';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { useAuth } from '@/providers';
 import styles from './page.module.css';
 
 export default function EmailDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const emailId = params.id as string;
   
   const [email, setEmail] = useState<Email | null>(null);
@@ -22,11 +24,17 @@ export default function EmailDetailPage() {
   
   useEffect(() => {
     async function fetchEmail() {
+      if (!user) {
+        setLoading(false);
+        setError('Please log in to view this email');
+        return;
+      }
+      
       setLoading(true);
       setError(null);
       
       try {
-        const result = await emailsApi.getEmail(emailId);
+        const result = await emailsApi.getEmail(user.id, emailId);
         
         if (result.error) {
           throw new Error(result.error.message);
@@ -41,7 +49,7 @@ export default function EmailDetailPage() {
     }
     
     fetchEmail();
-  }, [emailId]);
+  }, [emailId, user]);
   
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString([], {

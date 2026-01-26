@@ -96,6 +96,7 @@ export async function createEmail(
       recipient_address_id,
       recipient_email,
       sender_address,
+      sender_email,
       subject,
       body_text,
       body_html,
@@ -104,12 +105,13 @@ export async function createEmail(
       expires_at,
       is_encrypted,
       encryption_metadata
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *`,
     [
       recipientAddressId,
       data.recipientEmail,
       data.senderAddress,
+      data.senderAddress, // Also populate sender_email with the same value
       data.subject || null,
       data.bodyText || null,
       data.bodyHtml || null,

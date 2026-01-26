@@ -51,8 +51,8 @@ export async function getMailbox(
   );
 }
 
-export async function getEmail(emailId: string) {
-  return apiRequest<{ email: Email }>(`/emails/${emailId}`);
+export async function getEmail(userId: number, emailId: string) {
+  return apiRequest<{ email: Email }>(`/emails/mailbox/${userId}/${emailId}`);
 }
 
 export interface SendAttachment {
