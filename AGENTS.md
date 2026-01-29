@@ -131,6 +131,35 @@ cargo fmt
 npm run type-check
 ```
 
+## Project Structure
+
+This is an npm workspace with two packages:
+- `api/` - Backend API (Express, Node.js)
+- `web/` - Frontend web app (Next.js)
+
+### API Package (`api/`)
+The API is a self-contained npm workspace package:
+- `api/src/api/` - HTTP layer (Express app factory, routes, middleware, OpenAPI)
+- `api/src/config/` - Configuration management
+- `api/src/database/` - PostgreSQL connection, queries, migrations
+- `api/src/services/` - Business logic (auth, blockchain, email, payment)
+- `api/src/types/` - TypeScript type definitions
+- `api/tests/` - Test files
+
+Run API commands from root:
+```bash
+npm run dev:api    # Start API dev server
+npm run test       # Run API tests
+npm run migrate    # Run migrations
+```
+
+Or from the api directory:
+```bash
+cd api
+npm run dev
+npm run test
+```
+
 ## Key Learnings
 ### Critical Implementation Notes
 - **Case Sensitivity**: PostgreSQL database MUST use case-sensitive collation for address columns

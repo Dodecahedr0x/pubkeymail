@@ -181,21 +181,21 @@ pnpm db:seed          # Seed test data
 
 ```
 pubkeymail/
-├── src/
-│   ├── api/
-│   │   ├── middleware/     # Auth, rate limiting, validation
-│   │   └── routes/         # API route handlers
-│   ├── config/             # Configuration management
-│   ├── database/           # PostgreSQL connection, queries
-│   ├── services/
-│   │   ├── auth/           # Wallet authentication, JWT
-│   │   ├── blockchain/     # Solana, SNS resolution
-│   │   ├── cache/          # Redis client, nonce store
-│   │   ├── email/          # Ingestion, storage, cleanup
-│   │   └── payment/        # Solana Pay
-│   ├── types/              # TypeScript type definitions
-│   └── utils/              # Shared utilities
-├── tests/                  # Test files
+├── api/                    # API package (npm workspace)
+│   ├── src/
+│   │   ├── api/            # HTTP layer (routes, middleware, OpenAPI)
+│   │   ├── config/         # Configuration management
+│   │   ├── database/       # PostgreSQL connection, queries
+│   │   ├── services/       # Business logic
+│   │   │   ├── auth/       # Wallet authentication, JWT
+│   │   │   ├── blockchain/ # Solana, SNS resolution
+│   │   │   ├── cache/      # Redis client, nonce store
+│   │   │   ├── email/      # Ingestion, storage, cleanup
+│   │   │   └── payment/    # Solana Pay
+│   │   ├── types/          # TypeScript type definitions
+│   │   └── utils/          # Shared utilities
+│   └── tests/              # API test files
+├── web/                    # Web frontend package (npm workspace)
 ├── docs/                   # Documentation
 ├── specs/                  # Product & technical specifications
 └── docker-compose.yml      # Development infrastructure

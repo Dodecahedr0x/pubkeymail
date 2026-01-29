@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_24"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build:api"]
+
+[start]
+cmd = "node api/dist/index.js"

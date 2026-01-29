@@ -1,32 +1,30 @@
 /**
- * PubKeyMail - Main Application Entry Point
- * Blockchain-based email service with wallet authentication
+ * Express Application Factory
  *
- * This is the main server that wires together all routes and services.
+ * Creates and configures the Express application with all routes,
+ * middleware, and error handling.
  */
 
 import express, { Application, Request, Response, NextFunction } from 'express';
-import { config, isLocalDevMode } from './config/index.js';
-import { emailCleanupScheduler } from './services/email/cleanup-scheduler.js';
-import { createLogger } from './services/logger/index.js';
+import { config } from '../config/index.js';
+import { createLogger } from '../services/logger/index.js';
 
-const log = createLogger('Server');
+import authRoutes from './routes/auth-routes.js';
+import webhookRoutes from './routes/webhook-routes.js';
+import userRoutes from './routes/user-routes.js';
+import paymentRoutes from './routes/payment-routes.js';
+import healthRoutes from './routes/health-routes.js';
+import emailRoutes from './routes/email-routes.js';
+import forwardingRoutes from './routes/forwarding-routes.js';
+import complianceRoutes from './routes/compliance-routes.js';
+import encryptionRoutes from './routes/encryption-routes.js';
 
-// Import routes
-import authRoutes from './api/routes/auth-routes.js';
-import webhookRoutes from './api/routes/webhook-routes.js';
-import userRoutes from './api/routes/user-routes.js';
-import paymentRoutes from './api/routes/payment-routes.js';
-import healthRoutes from './api/routes/health-routes.js';
-import emailRoutes from './api/routes/email-routes.js';
-import forwardingRoutes from './api/routes/forwarding-routes.js';
-import complianceRoutes from './api/routes/compliance-routes.js';
-import encryptionRoutes from './api/routes/encryption-routes.js';
+const log = createLogger('API');
 
 /**
  * Create and configure Express application
  */
-function createApp(): Application {
+export function createApp(): Application {
   const app = express();
 
   // Trust proxy for correct client IP detection
@@ -146,65 +144,3 @@ function createApp(): Application {
 
   return app;
 }
-
-/**
- * Start the server
- */
-async function startServer(): Promise<void> {
-  const app = createApp();
-  const port = config.PORT;
-
-  // Start cleanup scheduler
-  if (config.NODE_ENV !== 'test') {
-    emailCleanupScheduler.start({
-      enabled: true,
-      runOnStartup: false,
-    });
-    log.info('Email cleanup scheduler started');
-  }
-
-  // Start HTTP server
-  const server = app.listen(port, () => {
-    const modeInfo = isLocalDevMode
-      ? '🧪 LOCAL DEV (in-memory)'
-      : config.NODE_ENV;
-    log.info('Server started', {
-      port,
-      mode: modeInfo,
-      api: `http://localhost:${port}/api/${config.API_VERSION}`,
-      health: `http://localhost:${port}/health`,
-      logLevel: config.LOG_LEVEL,
-    });
-  });
-
-  // Graceful shutdown
-  const shutdown = async (signal: string) => {
-    log.info('Shutdown initiated', { signal });
-
-    // Stop accepting new connections
-    server.close(() => {
-      log.info('HTTP server closed');
-    });
-
-    // Stop cleanup scheduler
-    emailCleanupScheduler.stop();
-    log.info('Cleanup scheduler stopped');
-
-    // Give ongoing requests time to complete
-    setTimeout(() => {
-      log.info('Shutdown complete');
-      process.exit(0);
-    }, 5000);
-  };
-
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
-  process.on('SIGINT', () => shutdown('SIGINT'));
-}
-
-// Start server if this is the main module
-startServer().catch((error) => {
-  log.fatal('Failed to start server', { error: error.message, stack: error.stack });
-  process.exit(1);
-});
-
-export { createApp };
