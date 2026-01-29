@@ -1,35 +1,20 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
-import reactHooks from "eslint-plugin-react-hooks";
 
 export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: [".next/**", "node_modules/**"],
+    ignores: ["out/**", "node_modules/**", "build/**"],
   },
   {
     files: ["**/*.ts", "**/*.tsx"],
-    plugins: {
-      "react-hooks": reactHooks,
-    },
     rules: {
-      ...reactHooks.configs.recommended.rules,
-      "react-hooks/set-state-in-effect": "off",
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "@typescript-eslint/no-explicit-any": "warn",
-    },
-  },
-  {
-    files: ["scripts/**/*.mjs"],
-    languageOptions: {
-      globals: {
-        process: "readonly",
-        console: "readonly",
-      },
     },
   },
 ];

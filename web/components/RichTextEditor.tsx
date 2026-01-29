@@ -14,9 +14,8 @@ interface RichTextEditorProps {
 }
 
 function MenuBar({ editor }: { editor: Editor | null }) {
-  if (!editor) return null;
-
   const setLink = useCallback(() => {
+    if (!editor) return;
     const previousUrl = editor.getAttributes('link').href;
     const url = window.prompt('URL', previousUrl);
 
@@ -29,6 +28,8 @@ function MenuBar({ editor }: { editor: Editor | null }) {
 
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
   }, [editor]);
+
+  if (!editor) return null;
 
   return (
     <div className={styles.menuBar}>

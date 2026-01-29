@@ -15,10 +15,6 @@ export default function ForwardingPage() {
   const [newEmail, setNewEmail] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadRules();
-  }, []);
-
   async function loadRules() {
     setLoading(true);
     const response = await forwarding.getForwardingRules();
@@ -29,6 +25,10 @@ export default function ForwardingPage() {
     }
     setLoading(false);
   }
+
+  useEffect(() => {
+    loadRules();
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
