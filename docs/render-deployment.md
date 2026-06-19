@@ -67,6 +67,7 @@ NEXT_PUBLIC_API_URL=https://<api-host>/api/v1
 ## Notes
 
 - The API explicitly binds to `0.0.0.0:$PORT` for Render.
+- `SOLANA_PAY_USDC_MINT` must match `SOLANA_CLUSTER`; the Blueprint defaults to mainnet-beta/mainnet USDC and expires payment requests after 900 seconds.
 - Both Git-backed services declare `repo` explicitly, as required by Render's Blueprint validator.
 - `NEXT_PUBLIC_API_URL` is compiled into the Next.js bundle, so changing it requires a web redeploy.
 - The Railway/Nixpacks deployment files were removed; Render is the deployment target for this repo.

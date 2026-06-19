@@ -30,6 +30,7 @@ type Tables = {
   subscriptions: Table;
   audit_logs: Table;
   scheduled_deletions: Table;
+  payment_requests: Table;
 };
 
 class MemoryDatabase {
@@ -151,6 +152,22 @@ class MemoryDatabase {
           'status',
           'created_at',
           'updated_at',
+        ],
+        rows: [],
+        autoIncrement: { id: 1 },
+      },
+      payment_requests: {
+        columns: [
+          'id',
+          'reference',
+          'user_id',
+          'plan',
+          'amount',
+          'status',
+          'signature',
+          'created_at',
+          'expires_at',
+          'confirmed_at',
         ],
         rows: [],
         autoIncrement: { id: 1 },

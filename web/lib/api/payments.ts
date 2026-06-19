@@ -28,6 +28,8 @@ export interface SolanaPayRequest {
   label: string;
   message: string;
   memo: string;
+  url: string;
+  expiresAt: string;
 }
 
 export interface SolanaPayStatus {

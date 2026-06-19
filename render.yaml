@@ -46,9 +46,9 @@ services:
       - key: SMTP_WEBHOOK_PATH
         value: /webhooks/inbound
       - key: SOLANA_RPC_ENDPOINT
-        value: https://api.devnet.solana.com
+        value: https://api.mainnet-beta.solana.com
       - key: SOLANA_CLUSTER
-        value: devnet
+        value: mainnet-beta
       - key: SNS_PROGRAM_ID
         value: namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX
       - key: SNS_CACHE_TTL
@@ -83,6 +83,8 @@ services:
         value: "10"
       - key: SOLANA_PAY_USDC_MINT
         value: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+      - key: SOLANA_PAY_REQUEST_EXPIRATION_SECONDS
+        value: "900"
       - key: LOG_LEVEL
         value: info
       - key: LOG_PRETTY_PRINT
@@ -144,9 +146,9 @@ services:
       - key: PORT
         value: "10000"
       - key: NEXT_PUBLIC_SOLANA_NETWORK
-        value: devnet
+        value: mainnet-beta
       - key: NEXT_PUBLIC_SOLANA_RPC
-        value: https://api.devnet.solana.com
+        value: https://api.mainnet-beta.solana.com
       - key: NEXT_PUBLIC_API_URL
         sync: false
 

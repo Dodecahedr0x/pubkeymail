@@ -118,6 +118,7 @@ export function createApp(): Application {
         webhooks: `${apiPrefix}/webhooks`,
         users: `${apiPrefix}/users`,
         payments: `${apiPrefix}/payments`,
+        solanaPay: `${apiPrefix}/payments/solana-pay`,
         emails: `${apiPrefix}/emails`,
         forwarding: `${apiPrefix}/forwarding`,
         compliance: `${apiPrefix}/compliance`,

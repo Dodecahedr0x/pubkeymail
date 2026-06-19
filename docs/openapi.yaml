@@ -531,6 +531,12 @@ components:
           type: string
         memo:
           type: string
+        url:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
       required:
         - reference
         - recipient
@@ -539,6 +545,8 @@ components:
         - label
         - message
         - memo
+        - url
+        - expiresAt
     SolanaPayVerifyRequest:
       type: object
       properties:
@@ -549,6 +557,27 @@ components:
       required:
         - reference
         - signature
+    SolanaPayStatus:
+      type: object
+      properties:
+        reference:
+          type: string
+        status:
+          type: string
+          enum:
+            - pending
+            - completed
+            - expired
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+      required:
+        - reference
+        - status
+        - createdAt
     CancelSubscriptionRequest:
       type: object
       properties:
@@ -1216,6 +1245,36 @@ paths:
                   - verified
         "400":
           description: Verification failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/payments/solana-pay/status/{reference}:
+    get:
+      tags:
+        - Payments
+      summary: Get or discover Solana Pay transaction status
+      parameters:
+        - schema:
+            type: string
+          required: true
+          name: reference
+          in: path
+      responses:
+        "200":
+          description: Payment request status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SolanaPayStatus"
+        "404":
+          description: Payment request not found
           content:
             application/json:
               schema:

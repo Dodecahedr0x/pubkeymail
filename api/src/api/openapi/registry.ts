@@ -4,10 +4,7 @@
  */
 
 import { z } from 'zod';
-import {
-  OpenAPIRegistry,
-  extendZodWithOpenApi,
-} from '@asteasolutions/zod-to-openapi';
+import { OpenAPIRegistry, extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 
 extendZodWithOpenApi(z);
 
@@ -311,6 +308,8 @@ export const SolanaPayResponseSchema = registry.register(
     label: z.string(),
     message: z.string(),
     memo: z.string(),
+    url: z.string().url(),
+    expiresAt: z.iso.datetime(),
   })
 );
 
@@ -319,6 +318,16 @@ export const SolanaPayVerifyRequestSchema = registry.register(
   z.object({
     reference: z.string(),
     signature: z.string(),
+  })
+);
+
+export const SolanaPayStatusSchema = registry.register(
+  'SolanaPayStatus',
+  z.object({
+    reference: z.string(),
+    status: z.enum(['pending', 'completed', 'expired']),
+    createdAt: z.iso.datetime(),
+    completedAt: z.iso.datetime().optional(),
   })
 );
 

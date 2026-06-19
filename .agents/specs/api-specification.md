@@ -11,6 +11,7 @@
 7. **Error Handling**: Consistent error response format
 
 ## Base URL
+
 ```
 Development: http://localhost:3000/api/v1
 Production: https://api.yourdomain.tld/api/v1
@@ -19,6 +20,7 @@ Production: https://api.yourdomain.tld/api/v1
 ## Authentication Flow
 
 ### 1. Request Authentication Challenge
+
 ```http
 POST /auth/challenge
 Content-Type: application/json
@@ -30,6 +32,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "challenge": "Sign this message to authenticate: 1234567890abcdef",
@@ -39,6 +42,7 @@ Content-Type: application/json
 ```
 
 ### 2. Verify Signature
+
 ```http
 POST /auth/verify
 Content-Type: application/json
@@ -52,6 +56,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "token": "jwt-token-here",
@@ -68,6 +73,7 @@ Content-Type: application/json
 ## Mailbox Endpoints
 
 ### Get Mailbox
+
 ```http
 GET /mailbox/:address
 Authorization: Bearer {token}
@@ -80,6 +86,7 @@ Query Parameters:
 ```
 
 **Response:**
+
 ```json
 {
   "address": "GNa9E2dWP8e2fg23pRJoiCvJm5cbzomm94YzotpcRh7A",
@@ -109,12 +116,14 @@ Query Parameters:
 ```
 
 ### Get Single Email
+
 ```http
 GET /emails/:emailId
 Authorization: Bearer {token}
 ```
 
 **Response:**
+
 ```json
 {
   "id": "email-uuid",
@@ -143,6 +152,7 @@ Authorization: Bearer {token}
 ```
 
 ### Get Merged Mailbox (Multiple Addresses)
+
 ```http
 GET /mailbox/merged
 Authorization: Bearer {token}
@@ -157,6 +167,7 @@ Query Parameters:
 ## Email Sending Endpoints
 
 ### Send Email
+
 ```http
 POST /emails/send
 Authorization: Bearer {token}
@@ -180,6 +191,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "id": "sent-email-uuid",
@@ -190,12 +202,14 @@ Content-Type: application/json
 ```
 
 ### Get User's Derived Addresses
+
 ```http
 GET /addresses/mine
 Authorization: Bearer {token}
 ```
 
 **Response:**
+
 ```json
 {
   "addresses": [
@@ -222,6 +236,7 @@ Authorization: Bearer {token}
 ## Address Management Endpoints
 
 ### Link Additional Address
+
 ```http
 POST /addresses/link
 Authorization: Bearer {token}
@@ -236,6 +251,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "address": "AnotherSolanaAddress123456789",
@@ -246,12 +262,14 @@ Content-Type: application/json
 ```
 
 ### Unlink Address
+
 ```http
 DELETE /addresses/:address
 Authorization: Bearer {token}
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Address unlinked successfully",
@@ -262,12 +280,14 @@ Authorization: Bearer {token}
 ## Forwarding Endpoints
 
 ### Get Forwarding Rules
+
 ```http
 GET /forwarding/rules
 Authorization: Bearer {token}
 ```
 
 **Response:**
+
 ```json
 {
   "rules": [
@@ -287,6 +307,7 @@ Authorization: Bearer {token}
 ```
 
 ### Create Forwarding Rule
+
 ```http
 POST /forwarding/rules
 Authorization: Bearer {token}
@@ -304,6 +325,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "id": "rule-uuid",
@@ -316,6 +338,7 @@ Content-Type: application/json
 ```
 
 ### Update Forwarding Rule
+
 ```http
 PUT /forwarding/rules/:ruleId
 Authorization: Bearer {token}
@@ -330,6 +353,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "id": "rule-uuid",
@@ -339,12 +363,14 @@ Content-Type: application/json
 ```
 
 ### Delete Forwarding Rule
+
 ```http
 DELETE /forwarding/rules/:ruleId
 Authorization: Bearer {token}
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Forwarding rule deleted successfully",
@@ -353,6 +379,7 @@ Authorization: Bearer {token}
 ```
 
 ### Verify Forwarding Destination
+
 ```http
 POST /forwarding/verify
 Content-Type: application/json
@@ -363,6 +390,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Email verified successfully",
@@ -375,17 +403,19 @@ Content-Type: application/json
 ## Subscription Endpoints
 
 ### Get Subscription Status
+
 ```http
 GET /subscription/status
 Authorization: Bearer {token}
 ```
 
 **Response:**
+
 ```json
 {
   "tier": "paid",
   "status": "active",
-  "paymentProvider": "stripe",
+  "paymentProvider": "solana_pay",
   "currentPeriodStart": "2024-01-01T00:00:00Z",
   "currentPeriodEnd": "2024-02-01T00:00:00Z",
   "cancelAtPeriodEnd": false,
@@ -398,57 +428,66 @@ Authorization: Bearer {token}
 }
 ```
 
-### Create Subscription (Stripe)
+### Create Solana Pay Request
+
 ```http
-POST /subscription/create
+POST /api/v1/payments/solana-pay/request
 Authorization: Bearer {token}
 Content-Type: application/json
 
 {
-  "provider": "stripe",
-  "plan": "monthly",
-  "successUrl": "https://yourapp.com/success",
-  "cancelUrl": "https://yourapp.com/cancel"
-}
-```
-
-**Response:**
-```json
-{
-  "provider": "stripe",
-  "checkoutUrl": "https://checkout.stripe.com/...",
-  "sessionId": "cs_test_..."
-}
-```
-
-### Create Subscription (Solana Pay)
-```http
-POST /subscription/create
-Authorization: Bearer {token}
-Content-Type: application/json
-
-{
-  "provider": "solana_pay",
+  "userId": 42,
   "plan": "monthly"
 }
 ```
 
 **Response:**
+
 ```json
 {
-  "provider": "solana_pay",
-  "paymentRequest": "solana:...",
-  "amount": 10.00,
-  "token": "USDC",
+  "reference": "ReferencePublicKey",
   "recipient": "MerchantWalletAddress",
-  "reference": "payment-reference-uuid",
-  "qrCode": "data:image/png;base64,..."
+  "amount": 2,
+  "splToken": "UsdcMintAddress",
+  "label": "PubKeyMail",
+  "message": "Monthly subscription",
+  "memo": "user:42:plan:monthly:ref:ReferencePublicKey",
+  "url": "solana:MerchantWalletAddress?...",
+  "expiresAt": "2026-06-19T10:15:00.000Z"
 }
 ```
 
-### Cancel Subscription
+The API persists each request for 15 minutes by default. `reference` is a valid,
+unique Solana public key included in the transfer instruction.
+
+### Verify Solana Pay Transfer
+
 ```http
-POST /subscription/cancel
+POST /api/v1/payments/solana-pay/verify
+Content-Type: application/json
+
+{
+  "reference": "ReferencePublicKey",
+  "signature": "SolanaTransactionSignature"
+}
+```
+
+The API validates the confirmed transaction on-chain, including recipient,
+amount, token mint, reference, and memo, before activating the subscription.
+
+### Get Solana Pay Status
+
+```http
+GET /api/v1/payments/solana-pay/status/{reference}
+```
+
+Polling discovers referenced transactions and returns `pending`, `completed`,
+or `expired`.
+
+### Cancel Subscription
+
+```http
+POST /api/v1/payments/cancel
 Authorization: Bearer {token}
 Content-Type: application/json
 
@@ -458,6 +497,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Subscription will be cancelled at period end",
@@ -468,6 +508,7 @@ Content-Type: application/json
 ## Webhook Endpoints (SMTP Provider)
 
 ### Inbound Email Webhook
+
 ```http
 POST /webhooks/inbound
 Content-Type: application/json
@@ -485,6 +526,7 @@ X-Webhook-Signature: provider-signature
 ```
 
 **Response:**
+
 ```json
 {
   "received": true,
@@ -493,6 +535,7 @@ X-Webhook-Signature: provider-signature
 ```
 
 ### Payment Webhook (Stripe)
+
 ```http
 POST /webhooks/stripe
 Content-Type: application/json
@@ -505,6 +548,7 @@ Stripe-Signature: signature
 ```
 
 **Response:**
+
 ```json
 {
   "received": true
@@ -514,6 +558,7 @@ Stripe-Signature: signature
 ## Utility Endpoints
 
 ### Resolve Name Service
+
 ```http
 GET /resolve/:name
 Query Parameters:
@@ -521,6 +566,7 @@ Query Parameters:
 ```
 
 **Response:**
+
 ```json
 {
   "name": "mydomain.sol",
@@ -533,6 +579,7 @@ Query Parameters:
 ```
 
 ### Validate Address
+
 ```http
 POST /validate/address
 Content-Type: application/json
@@ -544,6 +591,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "valid": true,
@@ -553,11 +601,13 @@ Content-Type: application/json
 ```
 
 ### Health Check
+
 ```http
 GET /health
 ```
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -611,6 +661,7 @@ All error responses follow this format:
 - **API General**: 1000 requests per hour per user
 
 Rate limit headers:
+
 ```
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 95
@@ -620,10 +671,12 @@ X-RateLimit-Reset: 1640995200
 ## Pagination
 
 All list endpoints support pagination with these query parameters:
+
 - `page`: Page number (default: 1)
 - `limit`: Items per page (default: 50, max: 100)
 
 Response includes pagination metadata:
+
 ```json
 {
   "pagination": {

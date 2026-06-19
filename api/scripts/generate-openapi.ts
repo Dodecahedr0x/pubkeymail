@@ -3,14 +3,14 @@
  * Generate OpenAPI specification from code
  *
  * Usage:
- *   pnpm run openapi:generate
- *   pnpm run openapi:generate --json
+ *   npm run openapi:generate
+ *   npm run openapi:generate -- --json
  */
 
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import YAML from 'yaml';
-import { generateOpenApiSpec } from '../src/api/index.js';
+import { generateOpenApiSpec } from '../src/api/openapi/index.js';
 
 const args = process.argv.slice(2);
 const outputJson = args.includes('--json');

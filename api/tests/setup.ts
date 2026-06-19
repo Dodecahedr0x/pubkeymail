@@ -14,6 +14,8 @@ process.env.SMTP_FROM_DOMAIN = 'test.pubkeymail.com';
 process.env.SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
 process.env.JWT_SECRET = 'test-jwt-secret-must-be-at-least-32-characters-long';
 process.env.SOLANA_CLUSTER = 'devnet';
+process.env.SOLANA_PAY_MERCHANT_WALLET = '11111111111111111111111111111111';
+process.env.SOLANA_PAY_USDC_MINT = '4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU';
 
 import { beforeAll, afterAll, beforeEach, vi } from 'vitest';
 

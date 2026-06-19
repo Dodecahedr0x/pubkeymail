@@ -78,9 +78,11 @@ const patchEsmBindings = async () => {
 
     for (const filePath of targets) {
       const raw = await fs.readFile(filePath, 'utf8');
-      const patched = raw.replace(
-        /(from\s+['"]\.\/(?!.*\.(?:js|cjs|mjs|json)$)[^'"]+)(['"])/g,
-        '$1.js$2'
+      const deduplicated = raw.replace(/(from\s+['"]\.\/[^'"]+?)(?:\.js){2,}(['"])/g, '$1.js$2');
+      const patched = deduplicated.replace(
+        /(from\s+['"])(\.\/[^'"]+)(['"])/g,
+        (match, prefix, specifier, quote) =>
+          /\.(?:js|cjs|mjs|json)$/.test(specifier) ? match : `${prefix}${specifier}.js${quote}`
       );
 
       if (raw !== patched) {

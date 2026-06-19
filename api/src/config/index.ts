@@ -93,7 +93,8 @@ const envSchema = z.object({
   SOLANA_PAY_MERCHANT_WALLET: z.string().optional(),
   SOLANA_PAY_USDC_MINT: z
     .string()
-    .default('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'), // Mainnet USDC
+    .default('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU'), // Devnet USDC
+  SOLANA_PAY_REQUEST_EXPIRATION_SECONDS: z.coerce.number().positive().default(900),
 
   // Logging
   LOG_LEVEL: z

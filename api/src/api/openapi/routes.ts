@@ -24,6 +24,7 @@ import {
   SolanaPayRequestSchema,
   SolanaPayResponseSchema,
   SolanaPayVerifyRequestSchema,
+  SolanaPayStatusSchema,
   CancelSubscriptionRequestSchema,
   HealthStatusSchema,
   ReadinessStatusSchema,
@@ -701,6 +702,38 @@ registry.registerPath({
         'application/json': {
           schema: ErrorSchema,
         },
+      },
+    },
+  },
+});
+
+registry.registerPath({
+  method: 'get',
+  path: '/api/v1/payments/solana-pay/status/{reference}',
+  tags: ['Payments'],
+  summary: 'Get or discover Solana Pay transaction status',
+  request: {
+    params: z.object({ reference: z.string() }),
+  },
+  responses: {
+    200: {
+      description: 'Payment request status',
+      content: {
+        'application/json': {
+          schema: SolanaPayStatusSchema,
+        },
+      },
+    },
+    404: {
+      description: 'Payment request not found',
+      content: {
+        'application/json': { schema: ErrorSchema },
+      },
+    },
+    500: {
+      description: 'Server error',
+      content: {
+        'application/json': { schema: ErrorSchema },
       },
     },
   },

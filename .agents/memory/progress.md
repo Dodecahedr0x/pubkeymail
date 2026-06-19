@@ -33,6 +33,9 @@ default.
 
 ## Recent Milestones
 
+- Main API now runs operational Solana Pay endpoints with SDK-validated USDC
+  transfers, persistent requests, automatic status discovery, and 85%+ service
+  coverage.
 - Agent knowledge moved to compact `.agents/` context, memory, skills, and specs.
 - Render Blueprint validated for API, web, PostgreSQL, and Redis.
 - Encryption storage, metrics, query indexes, multi-chain tests, forwarding

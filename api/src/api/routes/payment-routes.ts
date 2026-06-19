@@ -66,7 +66,7 @@ router.get('/pricing', (_req: Request, res: Response) => {
  */
 router.get('/providers', (_req: Request, res: Response) => {
   res.status(200).json({
-    providers: ['solana_pay'],
+    providers: paymentService.getAvailableProviders(),
     solana_pay: {
       available: paymentService.isProviderAvailable('solana_pay'),
     },
@@ -155,14 +155,19 @@ router.post('/solana-pay/request', async (req: Request, res: Response) => {
  */
 router.post('/solana-pay/verify', async (req: Request, res: Response) => {
   try {
-    log.debug('Verifying Solana Pay transaction', { body: req.body });
+    log.debug('Verifying Solana Pay transaction', {
+      reference: req.body?.reference,
+    });
     const { reference, signature } = req.body as {
       reference?: string;
       signature?: string;
     };
 
     if (!reference || !signature) {
-      log.warn('Solana Pay verification missing required fields', { reference: !!reference, signature: !!signature });
+      log.warn('Solana Pay verification missing required fields', {
+        reference: !!reference,
+        signature: !!signature,
+      });
       res.status(400).json({
         error: {
           code: 'VALIDATION_ERROR',
