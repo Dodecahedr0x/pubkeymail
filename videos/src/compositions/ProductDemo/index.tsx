@@ -10,6 +10,8 @@ import {
   ScreenFlash,
   SwingIn,
   PulsingGlow,
+  ScaledBox,
+  fitScale,
 } from '@/components/primitives';
 import {
   WalletButtonAdapter,
@@ -130,31 +132,47 @@ export const ProductDemo: React.FC<ProductDemoProps> = ({
             >
               <ScreenFlash delay={0} color="#9945FF" />
 
-              <SlideBlast delay={5} direction="down">
-                <h2
-                  style={{
-                    fontSize: Math.min(width * 0.06, 72),
-                    color: 'white',
-                    margin: 0,
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    letterSpacing: '6px',
-                  }}
-                >
-                  Connect Your Wallet
-                </h2>
-              </SlideBlast>
+              {/* Connect prompt — hands off to the success state at frame 45 */}
+              <Sequence durationInFrames={45} layout="none">
+                <SlideBlast delay={5} direction="down">
+                  <div style={{ textAlign: 'center' }}>
+                    <h2
+                      style={{
+                        fontSize: Math.min(width * 0.06, 72),
+                        color: 'white',
+                        margin: 0,
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '6px',
+                      }}
+                    >
+                      Connect &amp; Sign In
+                    </h2>
+                    <p
+                      style={{
+                        fontSize: Math.min(width * 0.024, 28),
+                        color: '#14F195',
+                        margin: '16px 0 0',
+                        fontWeight: 600,
+                        letterSpacing: '2px',
+                      }}
+                    >
+                      No password. No signup.
+                    </p>
+                  </div>
+                </SlideBlast>
 
-              <ElasticPop delay={20}>
-                <div
-                  style={{
-                    transform: 'scale(1.8)',
-                    padding: 40,
-                  }}
-                >
-                  <WalletButtonAdapter delay={0} connected={false} />
-                </div>
-              </ElasticPop>
+                <ElasticPop delay={20}>
+                  <div
+                    style={{
+                      transform: 'scale(1.8)',
+                      padding: 40,
+                    }}
+                  >
+                    <WalletButtonAdapter delay={0} connected={false} />
+                  </div>
+                </ElasticPop>
+              </Sequence>
 
               {/* Connection success */}
               <Sequence from={45}>
@@ -196,6 +214,43 @@ export const ProductDemo: React.FC<ProductDemoProps> = ({
                       />
                     </div>
                   </ElasticPop>
+
+                  <SlideBlast delay={28} direction="up">
+                    <div
+                      style={{
+                        marginTop: 24,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: '#888',
+                          fontSize: Math.min(width * 0.018, 20),
+                          textTransform: 'uppercase',
+                          letterSpacing: '3px',
+                        }}
+                      >
+                        Your inbox is live at
+                      </span>
+                      <span
+                        style={{
+                          color: '#fff',
+                          fontFamily: 'monospace',
+                          fontWeight: 700,
+                          fontSize: Math.min(width * 0.03, 36),
+                          background: 'rgba(20, 241, 149, 0.15)',
+                          border: '2px solid rgba(20, 241, 149, 0.6)',
+                          borderRadius: 14,
+                          padding: '12px 28px',
+                        }}
+                      >
+                        Dode...7xKm@pubkeymail.com
+                      </span>
+                    </div>
+                  </SlideBlast>
                 </AbsoluteFill>
               </Sequence>
             </AbsoluteFill>
@@ -203,33 +258,60 @@ export const ProductDemo: React.FC<ProductDemoProps> = ({
         )}
 
         {/* INBOX SEQUENCE */}
-        {showInbox && (
-          <Sequence from={180} durationInFrames={120}>
-            <AbsoluteFill
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 60,
-                padding: 80,
-              }}
-            >
-              <ScreenFlash delay={0} color="#14F195" />
+        {showInbox && (() => {
+          const isPortrait = height > width;
+          // Natural footprint of the sidebar + email-list group.
+          const SIDEBAR_W = 280;
+          const LIST_W = 520;
+          const PANEL_H = 400;
+          const gap = isPortrait ? 40 : 56;
+          const contentW = isPortrait ? LIST_W : SIDEBAR_W + LIST_W + gap;
+          const contentH = isPortrait ? 260 + gap + PANEL_H : PANEL_H;
+          const scale = fitScale(
+            contentW,
+            contentH,
+            width * 0.86,
+            height * 0.84,
+            1.7
+          );
 
-              <SlideBlast delay={5} direction="left">
-                <div style={{ transform: 'scale(1.3)' }}>
-                  <SidebarAdapter delay={0} activeItem="inbox" />
-                </div>
-              </SlideBlast>
+          return (
+            <Sequence from={180} durationInFrames={120}>
+              <AbsoluteFill
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ScreenFlash delay={0} color="#14F195" />
 
-              <SlideBlast delay={15} direction="right">
-                <div style={{ transform: 'scale(1.2)' }}>
-                  <EmailListAdapter delay={0} staggerDelay={6} />
-                </div>
-              </SlideBlast>
-            </AbsoluteFill>
-          </Sequence>
-        )}
+                <ScaledBox width={contentW} height={contentH} scale={scale}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: isPortrait ? 'column' : 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap,
+                      width: contentW,
+                      height: contentH,
+                    }}
+                  >
+                    <SlideBlast delay={5} direction="left">
+                      <SidebarAdapter delay={0} activeItem="inbox" />
+                    </SlideBlast>
+
+                    <SlideBlast delay={15} direction="right">
+                      <EmailListAdapter delay={0} staggerDelay={6} />
+                    </SlideBlast>
+                  </div>
+                </ScaledBox>
+              </AbsoluteFill>
+            </Sequence>
+          );
+        })()}
       </AnimatedGradient>
     </AbsoluteFill>
   );

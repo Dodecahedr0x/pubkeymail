@@ -1,6 +1,7 @@
 node_modules/
 out/
 dist/
+inspect/
 *.mp4
 *.webm
 .DS_Store

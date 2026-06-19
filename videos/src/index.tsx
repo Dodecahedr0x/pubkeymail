@@ -14,28 +14,31 @@ import { presets } from './config/presets';
 
 const defaultProductDemoProps = {
   title: 'PubKeyMail',
-  subtitle: 'Decentralized Email for Web3',
+  subtitle: 'Your Wallet Is Your Email',
   showWalletConnect: true,
   showInbox: true,
 };
 
 const defaultExplainerProps = {
-  headline: 'Email, Reimagined',
+  headline: 'Your Wallet, Your Email',
   points: [
     {
-      icon: '🔐',
-      title: 'Wallet-Based Identity',
-      description: 'Your Solana wallet is your email address',
+      icon: '🔑',
+      title: 'An Address From Your Wallet',
+      description:
+        'Your wallet gets a real inbox: yourname.sol@pubkeymail.com. On-chain identity, finally reachable.',
     },
     {
-      icon: '📧',
-      title: 'True Ownership',
-      description: 'Your messages belong to you, not a corporation',
+      icon: '📨',
+      title: 'Anyone Can Reach You',
+      description:
+        'Receive mail from any wallet — or any inbox, even Gmail. Every wallet you own, one unified inbox.',
     },
     {
       icon: '⚡',
-      title: 'Instant & Free',
-      description: 'No gas fees for sending or receiving',
+      title: 'No Password. No Signup.',
+      description:
+        'Connect your wallet, sign once, and you are in. That is the entire setup.',
     },
   ],
 };
@@ -43,18 +46,18 @@ const defaultExplainerProps = {
 const defaultTutorialProps = {
   steps: [
     {
-      title: 'Step 1: Connect Wallet',
-      description: 'Click the Connect Wallet button and approve the connection',
+      title: 'Connect & Sign In',
+      description: 'No password, no signup form. Connect your wallet and sign once — that is it.',
       highlight: 'wallet',
     },
     {
-      title: 'Step 2: View Inbox',
-      description: 'Your inbox shows all messages sent to your wallet address',
+      title: 'Your Inbox Is Ready',
+      description: 'Every wallet gets yourname.sol@pubkeymail.com. All your addresses, one inbox.',
       highlight: 'inbox',
     },
     {
-      title: 'Step 3: Compose Message',
-      description: 'Click Compose to send a message to any Solana address',
+      title: 'Send From Your Wallet',
+      description: 'Reply and compose straight from your wallet address. Anyone can receive it.',
       highlight: 'compose',
     },
   ],
@@ -65,12 +68,12 @@ const defaultProductPresentationProps = {
     free: {
       name: 'Free',
       price: '$0',
-      features: ['1 wallet address', '100 emails/month', 'Basic support'],
+      features: ['1 wallet address', 'Receive unlimited email', 'yourname.sol@pubkeymail.com'],
     },
     pro: {
       name: 'Pro',
       price: '$5/mo',
-      features: ['Unlimited wallets', 'Unlimited emails', 'Email forwarding', 'Priority support'],
+      features: ['Link unlimited wallets', 'Send & reply', 'Forward to any inbox', 'End-to-end encryption'],
     },
   },
 };

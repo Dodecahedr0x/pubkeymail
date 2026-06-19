@@ -69,7 +69,8 @@ const BenefitCard: React.FC<{
   description: string;
   delay: number;
   direction: 'left' | 'right' | 'up' | 'down';
-}> = ({ icon, title, description, delay, direction }) => {
+  width?: number;
+}> = ({ icon, title, description, delay, direction, width = 320 }) => {
   return (
     <SlideBlast delay={delay} direction={direction}>
       <div
@@ -78,7 +79,7 @@ const BenefitCard: React.FC<{
           border: '2px solid rgba(153, 69, 255, 0.3)',
           borderRadius: 20,
           padding: 30,
-          width: 320,
+          width,
           textAlign: 'center',
         }}
       >
@@ -102,6 +103,9 @@ const BenefitCard: React.FC<{
 export const IntegratorPitch: React.FC<IntegratorPitchProps> = ({ companyName }) => {
   const frame = useCurrentFrame();
   const { width, height } = useVideoConfig();
+  const isPortrait = height > width;
+  // Wider cards when stacked vertically so text stays readable on portrait.
+  const cardWidth = isPortrait ? Math.min(width * 0.78, 640) : 320;
 
   return (
     <AbsoluteFill style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -237,7 +241,7 @@ export const IntegratorPitch: React.FC<IntegratorPitchProps> = ({ companyName })
                     PubKeyMail API
                   </div>
                   <div style={{ color: '#14F195', fontSize: 20, marginTop: 10 }}>
-                    Wallet → Email. Instantly.
+                    Every wallet already has an inbox.
                   </div>
                 </div>
               </PulsingGlow>
@@ -333,13 +337,23 @@ await pubkeymail.send({
               </h2>
             </ZoomBlur>
 
-            <div style={{ display: 'flex', gap: 30, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: isPortrait ? 'column' : 'row',
+                gap: 30,
+                flexWrap: 'wrap',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
               <BenefitCard
                 icon="🛡️"
                 title="Protect Privacy"
                 description="Users keep their personal email private. Build trust from day one."
                 delay={20}
                 direction="left"
+                width={cardWidth}
               />
               <BenefitCard
                 icon="🚀"
@@ -347,6 +361,7 @@ await pubkeymail.send({
                 description="No email forms. No verification. Users connect wallet and go."
                 delay={35}
                 direction="up"
+                width={cardWidth}
               />
               <BenefitCard
                 icon="📈"
@@ -354,6 +369,7 @@ await pubkeymail.send({
                 description="Reach users anytime. Transaction alerts, updates, announcements."
                 delay={50}
                 direction="right"
+                width={cardWidth}
               />
             </div>
           </AbsoluteFill>

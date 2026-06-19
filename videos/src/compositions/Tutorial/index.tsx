@@ -11,6 +11,8 @@ import {
   ScreenFlash,
   TypeWriter,
   PulsingGlow,
+  ScaledBox,
+  fitScale,
 } from '@/components/primitives';
 import {
   WalletButtonAdapter,
@@ -24,55 +26,84 @@ export const Tutorial: React.FC<TutorialProps> = ({ steps = [] }) => {
   const { width, height } = useVideoConfig();
   const stepDuration = 120;
 
-  const renderHighlight = (highlight?: string, sequenceFrame = 0) => {
-    const scale = Math.min(width / 1920, height / 1080) * 1.4;
+  // Area available for the visual highlight, below the step text and above the
+  // progress bar. Highlights are scaled to fit this so they never collide with
+  // the surrounding text.
+  const availW = width * 0.82;
+  const availH = height * 0.42;
 
+  const renderHighlight = (highlight?: string, sequenceFrame = 0) => {
     switch (highlight) {
-      case 'wallet':
+      case 'wallet': {
+        const W = 480;
+        const H = 170;
+        const scale = fitScale(W, H, availW, availH, 2.2);
         return (
-          <ElasticPop delay={35}>
-            <PulsingGlow color="#9945FF" size={250}>
-              <div
-                style={{
-                  padding: 50,
-                  background: 'rgba(255,255,255,0.08)',
-                  borderRadius: 30,
-                  border: '3px solid rgba(20, 241, 149, 0.5)',
-                  boxShadow: '0 0 60px rgba(20, 241, 149, 0.3)',
-                  transform: `scale(${scale * 1.5})`,
-                }}
-              >
-                <WalletButtonAdapter delay={0} connected={false} />
-              </div>
-            </PulsingGlow>
-          </ElasticPop>
+          <ScaledBox width={W} height={H} scale={scale}>
+            <ElasticPop delay={35}>
+              <PulsingGlow color="#9945FF" size={250}>
+                <div
+                  style={{
+                    width: W,
+                    height: H,
+                    boxSizing: 'border-box',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 50,
+                    background: 'rgba(255,255,255,0.08)',
+                    borderRadius: 30,
+                    border: '3px solid rgba(20, 241, 149, 0.5)',
+                    boxShadow: '0 0 60px rgba(20, 241, 149, 0.3)',
+                  }}
+                >
+                  <WalletButtonAdapter delay={0} connected={false} />
+                </div>
+              </PulsingGlow>
+            </ElasticPop>
+          </ScaledBox>
         );
-      case 'inbox':
+      }
+      case 'inbox': {
+        const W = 840;
+        const H = 400;
+        const scale = fitScale(W, H, availW, availH, 1.6);
         return (
-          <div
-            style={{
-              display: 'flex',
-              gap: 40,
-              transform: `scale(${scale})`,
-            }}
-          >
-            <SlideBlast delay={35} direction="left">
-              <SidebarAdapter delay={0} activeItem="inbox" />
-            </SlideBlast>
-            <SlideBlast delay={45} direction="right">
-              <EmailListAdapter delay={0} staggerDelay={5} />
-            </SlideBlast>
-          </div>
+          <ScaledBox width={W} height={H} scale={scale}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 40,
+                width: W,
+                height: H,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <SlideBlast delay={35} direction="left">
+                <SidebarAdapter delay={0} activeItem="inbox" />
+              </SlideBlast>
+              <SlideBlast delay={45} direction="right">
+                <EmailListAdapter delay={0} staggerDelay={5} />
+              </SlideBlast>
+            </div>
+          </ScaledBox>
         );
-      case 'compose':
+      }
+      case 'compose': {
+        const W = 770;
+        const H = 320;
+        const scale = fitScale(W, H, availW, availH, 1.6);
         return (
+          <ScaledBox width={W} height={H} scale={scale}>
           <SlideBlast delay={35} direction="up">
             <div
               style={{
                 display: 'flex',
                 gap: 40,
+                width: W,
+                height: H,
                 alignItems: 'flex-start',
-                transform: `scale(${scale})`,
               }}
             >
               <SidebarAdapter delay={0} activeItem="compose" />
@@ -137,7 +168,9 @@ export const Tutorial: React.FC<TutorialProps> = ({ steps = [] }) => {
               </PulsingGlow>
             </div>
           </SlideBlast>
+          </ScaledBox>
         );
+      }
       default:
         return null;
     }

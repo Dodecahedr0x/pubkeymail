@@ -141,7 +141,7 @@ export const ProductPresentation: React.FC<ProductPresentationProps> = ({ pricin
                   fontWeight: 600,
                 }}
               >
-                <TypeWriter text="Your Wallet. Your Inbox." startFrame={35} speed={2} />
+                <TypeWriter text="Your Wallet Is Your Email" startFrame={35} speed={2} />
               </p>
             </SlideBlast>
           </AbsoluteFill>
@@ -186,7 +186,7 @@ export const ProductPresentation: React.FC<ProductPresentationProps> = ({ pricin
           <FeatureScene
             icon="📬"
             title="All Your Keys, One Inbox"
-            description="Connect multiple wallets. View all your emails in a unified, organized inbox."
+            description="Link every wallet you own. Receive mail from any inbox — even Gmail — all in one place."
             index={1}
             visual={
               <div style={{ display: 'flex', gap: 30, alignItems: 'flex-start' }}>

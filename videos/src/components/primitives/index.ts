@@ -8,3 +8,4 @@ export { FloatingParticles, FloatingIcons } from './FloatingElements';
 export { TypeWriter, GlitchText } from './TypeWriter';
 export { ScaleIn, SpringIn, BounceIn } from './ScaleIn';
 export { SwingIn, ElasticPop, FlipIn, ZoomBlur, SlideBlast, ScreenFlash } from './FlashyTransitions';
+export { ScaledBox, fitScale } from './ScaledBox';
