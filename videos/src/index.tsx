@@ -6,6 +6,10 @@ import { Explainer } from './compositions/Explainer';
 import { explainerSchema } from './compositions/Explainer/schema';
 import { Tutorial } from './compositions/Tutorial';
 import { tutorialSchema } from './compositions/Tutorial/schema';
+import { ProductPresentation } from './compositions/ProductPresentation';
+import { productPresentationSchema } from './compositions/ProductPresentation/schema';
+import { IntegratorPitch } from './compositions/IntegratorPitch';
+import { integratorPitchSchema } from './compositions/IntegratorPitch/schema';
 import { presets } from './config/presets';
 
 const defaultProductDemoProps = {
@@ -54,6 +58,25 @@ const defaultTutorialProps = {
       highlight: 'compose',
     },
   ],
+};
+
+const defaultProductPresentationProps = {
+  pricing: {
+    free: {
+      name: 'Free',
+      price: '$0',
+      features: ['1 wallet address', '100 emails/month', 'Basic support'],
+    },
+    pro: {
+      name: 'Pro',
+      price: '$5/mo',
+      features: ['Unlimited wallets', 'Unlimited emails', 'Email forwarding', 'Priority support'],
+    },
+  },
+};
+
+const defaultIntegratorPitchProps = {
+  companyName: 'Your App',
 };
 
 export const RemotionRoot: React.FC = () => {
@@ -117,6 +140,54 @@ export const RemotionRoot: React.FC = () => {
         fps={presets.youtube.fps}
         width={presets.youtube.width}
         height={presets.youtube.height}
+      />
+
+      {/* Product Presentation - Full feature showcase */}
+      <Composition
+        id="ProductPresentation"
+        component={ProductPresentation}
+        schema={productPresentationSchema}
+        defaultProps={defaultProductPresentationProps}
+        durationInFrames={900}
+        fps={presets.youtube.fps}
+        width={presets.youtube.width}
+        height={presets.youtube.height}
+      />
+
+      {/* Product Presentation - TikTok format */}
+      <Composition
+        id="ProductPresentation-TikTok"
+        component={ProductPresentation}
+        schema={productPresentationSchema}
+        defaultProps={defaultProductPresentationProps}
+        durationInFrames={900}
+        fps={presets.tiktok.fps}
+        width={presets.tiktok.width}
+        height={presets.tiktok.height}
+      />
+
+      {/* Integrator Pitch - B2B showcase */}
+      <Composition
+        id="IntegratorPitch"
+        component={IntegratorPitch}
+        schema={integratorPitchSchema}
+        defaultProps={defaultIntegratorPitchProps}
+        durationInFrames={740}
+        fps={presets.youtube.fps}
+        width={presets.youtube.width}
+        height={presets.youtube.height}
+      />
+
+      {/* Integrator Pitch - TikTok format */}
+      <Composition
+        id="IntegratorPitch-TikTok"
+        component={IntegratorPitch}
+        schema={integratorPitchSchema}
+        defaultProps={defaultIntegratorPitchProps}
+        durationInFrames={740}
+        fps={presets.tiktok.fps}
+        width={presets.tiktok.width}
+        height={presets.tiktok.height}
       />
     </>
   );
