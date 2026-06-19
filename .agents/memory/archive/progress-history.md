@@ -75,7 +75,7 @@
 - [x] Add safety checks (don't delete entire mailboxes)
 - [x] Create cleanup monitoring and logging
 - [x] Test cleanup logic thoroughly
-- [ ] Setup cleanup metrics and alerts (monitoring integration pending)
+- [x] Setup cleanup metrics and alerts (metricsService cleanup counters/gauges/duration + alert rules in monitoring-setup.md)
 
 ## Phase 4: User Management & Payments (High Priority)
 
@@ -176,16 +176,16 @@
 ### Optional Email Encryption
 - [x] Design encryption key management
 - [x] Implement public key encryption using blockchain keys (X25519)
-- [ ] Create encryption toggle in UI
-- [ ] Build encrypted email storage
-- [ ] Implement decryption on retrieval
-- [ ] Add encryption status indicators
-- [x] Write encryption tests (30 tests)
+- [ ] Create encryption toggle in UI (frontend pending)
+- [x] Build encrypted email storage (EmailEncryptionService.encryptForStorage + POST /encryption/encrypt)
+- [x] Implement decryption on retrieval (EmailEncryptionService.decryptOnRetrieval + POST /encryption/decrypt)
+- [ ] Add encryption status indicators (frontend pending)
+- [x] Write encryption tests (37 tests: 30 key/crypto + 7 email envelope roundtrip)
 
 ## Phase 9: Performance & Scalability (Low Priority)
 
 ### Optimization
-- [ ] Implement database query optimization
+- [x] Implement database query optimization (migration 007: pg_trgm GIN indexes for search + composite indexes)
 - [x] Add database connection pooling (PoolMonitor added)
 - [ ] Setup read replicas for queries
 - [x] Implement caching strategy (Redis - nonce storage complete)
@@ -195,13 +195,13 @@
 - [x] Optimize SNS resolution caching (Redis-based SNSCache)
 
 ### Monitoring & Observability
-- [ ] Setup structured logging
-- [ ] Implement metrics collection
-- [ ] Create monitoring dashboards
-- [ ] Setup error tracking (Sentry)
-- [ ] Add alerting for critical failures
+- [x] Setup structured logging (createLogger structured logger, LOG_LEVEL/LOG_PRETTY_PRINT, documented)
+- [x] Implement metrics collection (MetricsService counters/gauges/histograms + /metrics Prometheus & JSON, 13 tests)
+- [ ] Create monitoring dashboards (Prometheus endpoint ready; dashboard provisioning pending)
+- [ ] Setup error tracking (Sentry) (integration steps documented; needs SENTRY_DSN wiring)
+- [ ] Add alerting for critical failures (alert rules documented in monitoring-setup.md; needs Prometheus deploy)
 - [x] Create health check endpoints (implemented in Phase 4)
-- [ ] Document monitoring setup
+- [x] Document monitoring setup (docs/monitoring-setup.md)
 
 ## Phase 10: Future Extensibility (Low Priority)
 
@@ -210,12 +210,12 @@
 - [x] Implement Ethereum integration (EthereumProvider)
 - [x] Add ENS (Ethereum Name Service) support
 - [x] Build chain-agnostic address handling
-- [ ] Test multi-chain scenarios
-- [ ] Document blockchain extension guide
+- [x] Test multi-chain scenarios (cross-chain validation/rejection/normalization, 10 tests)
+- [x] Document blockchain extension guide (docs/blockchain-extension-guide.md)
 
 ### Additional Features
 - [x] Email threading and conversations (threading service + GET /emails/threads/:userId, 13 tests)
-- [ ] Advanced forwarding filters
+- [x] Advanced forwarding filters (bodyContains/excludeBody/hasAttachment/matchAll AND-OR, 13 tests)
 - [x] Spam blocking and allowlists (SpamFilterService: heuristic scoring + allow/blocklist, 15 tests)
 - [ ] Mobile app API support
 - [x] Email templates (EmailTemplateService + /templates routes, {{var}} render, 11 tests)
@@ -273,20 +273,32 @@
 - [x] Optimize for tablet viewports
 
 ### Accessibility & UX
-- [ ] Keyboard navigation support
-- [ ] Screen reader compatibility (ARIA)
-- [ ] Focus management
+- [x] Keyboard navigation support (EmailList arrow/Home/End nav, skip-to-content link, focus-visible styles)
+- [x] Screen reader compatibility (ARIA) (list/listitem roles, aria-label/aria-current, sr-only cues, decorative icons hidden)
+- [x] Focus management (ConfirmModal focus trap + restore, main landmark tabIndex target)
 - [x] Loading and error states
 - [x] Toast notifications
 - [x] Dark mode support (built-in dark theme)
 
 ## Recent Completions (This Session)
+- ✅ Replaced root agent files with the `.agents/` knowledge workspace (context, memory, skills, and specs) and updated agent entry points
+- ✅ Fixed Render Blueprint validation by declaring the Git repository and using the actual `master` deployment branch
 - ✅ Phase 10 Additional Features batch: email threading, spam filtering/allowlists, email templates, mailbox search
   - SpamFilterService (heuristics + allow/blocklist wildcards) — 15 tests
   - Email threading (Message-ID/References + subject clustering) + GET /emails/threads/:userId — 13 tests
   - EmailTemplateService ({{var}} render, HTML-escaping) + /templates CRUD/render routes — 11 tests
   - Mailbox search query language (from:/subject:/has:attachment/"phrases") + GET /emails/search/:userId — 16 tests
-  - Total tests: 583 passing (up from 528)
+  - Advanced forwarding filters (bodyContains/excludeBody/hasAttachment + matchAll AND/OR) — 13 tests
+- ✅ Phase 8/9/10 backend batch:
+  - Encrypted email storage + decryption-on-retrieval (EmailEncryptionService + /encryption/encrypt|decrypt) — 7 tests
+  - Metrics collection (MetricsService + /metrics Prometheus/JSON + HTTP/ingestion/cleanup instrumentation) — 13 tests
+  - DB query optimization (migration 007: pg_trgm GIN + composite indexes)
+  - Multi-chain scenario tests (10) + blockchain extension guide + monitoring setup docs
+  - Total tests: 626 passing (up from 528)
+- ✅ Phase 11 Accessibility batch (web app, build/type-check/lint green):
+  - Keyboard navigation (EmailList Arrow/Home/End), skip-to-content link, :focus-visible styles, prefers-reduced-motion
+  - Screen-reader ARIA (list/listitem roles, aria-label/aria-current, sr-only unread cues, decorative icons aria-hidden)
+  - Focus management (ConfirmModal Tab focus-trap + focus restore, main landmark target)
 - ✅ Replaced Railway/Nixpacks deployment with Render Blueprint (`render.yaml`)
 - ✅ Added Render deployment documentation and Dashboard environment variable checklist
 - ✅ Phase 8: Email Encryption Service (X25519, 30 tests)

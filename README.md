@@ -196,8 +196,8 @@ pubkeymail/
 │   │   └── utils/          # Shared utilities
 │   └── tests/              # API test files
 ├── web/                    # Web frontend package (npm workspace)
-├── docs/                   # Documentation
-├── specs/                  # Product & technical specifications
+├── docs/                   # User-facing and operational documentation
+├── .agents/                # AI context, memory, skills, and specifications
 └── docker-compose.yml      # Development infrastructure
 ```
 
@@ -227,9 +227,10 @@ pubkeymail/
 
 ## Documentation
 
-- [Product Requirements](specs/product-requirements.md)
-- [Technical Architecture](specs/technical-architecture.md)
-- [API Specification](specs/api-specification.md)
+- [Agent Workspace](.agents/README.md)
+- [Product Requirements](.agents/specs/product-requirements.md)
+- [Technical Architecture](.agents/specs/technical-architecture.md)
+- [API Specification](.agents/specs/api-specification.md)
 - [Cleanup Service](docs/cleanup-service.md)
 - [Render Deployment](docs/render-deployment.md)
 

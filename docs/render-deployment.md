@@ -25,7 +25,11 @@ npm --prefix web run start -- --hostname 0.0.0.0
 
 ## Apply The Blueprint
 
-1. Commit and push `render.yaml` to the default branch.
+The Blueprint deploys `https://github.com/Dodecahedr0x/pubkeymail` from the
+repository's `master` branch. Keep both service definitions synchronized if the
+repository URL or default branch changes.
+
+1. Commit and push `render.yaml` to `master`.
 2. Open the Render Blueprint flow:
    `https://dashboard.render.com/blueprint/new?repo=https://github.com/Dodecahedr0x/pubkeymail`
 3. Fill the secret and deployment-specific environment variables listed below.
@@ -63,5 +67,6 @@ NEXT_PUBLIC_API_URL=https://<api-host>/api/v1
 ## Notes
 
 - The API explicitly binds to `0.0.0.0:$PORT` for Render.
+- Both Git-backed services declare `repo` explicitly, as required by Render's Blueprint validator.
 - `NEXT_PUBLIC_API_URL` is compiled into the Next.js bundle, so changing it requires a web redeploy.
 - The Railway/Nixpacks deployment files were removed; Render is the deployment target for this repo.
