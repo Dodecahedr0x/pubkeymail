@@ -32,18 +32,21 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   return (
     <>
       {isOpen && <div className={styles.overlay} onClick={onClose} />}
-      <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
+      <aside
+        className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}
+        aria-label="Mailbox navigation"
+      >
       <div className={styles.logo}>
         <Link href="/">
-          <span>📬</span> PubKeyMail
+          <span aria-hidden="true">📬</span> PubKeyMail
         </Link>
       </div>
-      
-      <nav className={styles.nav}>
+
+      <nav className={styles.nav} aria-label="Primary">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const isLocked = item.premium && !isPaid;
-          
+
           if (isLocked) {
             return (
               <Link
@@ -52,21 +55,22 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 className={`${styles.navItem} ${styles.locked}`}
                 onClick={handleNavClick}
               >
-                <span className={styles.icon}>{item.icon}</span>
+                <span className={styles.icon} aria-hidden="true">{item.icon}</span>
                 {item.label}
                 <span className={styles.premiumBadge}>Pro</span>
               </Link>
             );
           }
-          
+
           return (
             <Link
               key={item.href}
               href={item.href}
               className={`${styles.navItem} ${isActive ? styles.active : ''}`}
               onClick={handleNavClick}
+              aria-current={isActive ? 'page' : undefined}
             >
-              <span className={styles.icon}>{item.icon}</span>
+              <span className={styles.icon} aria-hidden="true">{item.icon}</span>
               {item.label}
             </Link>
           );

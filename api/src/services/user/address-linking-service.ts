@@ -11,6 +11,7 @@
 import { db, withTransaction } from '../../database/connection.js';
 import { tierService } from '../tier/tier-service.js';
 import { getBlockchainProvider } from '../blockchain/provider-factory.js';
+import { parseSearchQuery } from '../email/search.js';
 import type { PoolClient } from 'pg';
 import type { BlockchainType } from '../../types/blockchain.js';
 
@@ -375,6 +376,120 @@ export class AddressLinkingService {
   }
 
   /**
+   * Search a user's unified mailbox using the email search query language.
+   * Translates the parsed query into SQL conditions over subject, sender, and
+   * body, scoped to the user's linked addresses.
+   *
+   * Supported operators: free text, "quoted phrases", from:, subject:,
+   * has:attachment.
+   *
+   * @param userId - User ID
+   * @param query - Raw search query string
+   * @param limit - Max results
+   * @param offset - Pagination offset
+   */
+  async searchMailbox(
+    userId: number,
+    query: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<AddressLinkingResult<UnifiedMailboxResult>> {
+    try {
+      const addressResult = await db.query<{ address_id: number }>(
+        `SELECT primary_address_id as address_id
+         FROM users u
+         WHERE u.id = $1
+         UNION
+         SELECT al.address_id
+         FROM address_links al
+         WHERE al.user_id = $1`,
+        [userId]
+      );
+
+      if (addressResult.rows.length === 0) {
+        return { success: false, error: 'User not found' };
+      }
+
+      const addressIds = addressResult.rows.map((r) => r.address_id);
+
+      const parsed = parseSearchQuery(query);
+      const conditions: string[] = ['e.recipient_address_id = ANY($1)'];
+      const params: Array<number[] | string | number> = [addressIds];
+      let p = 2;
+
+      // Free-text terms / quoted phrases: each must appear in subject or body.
+      for (const term of parsed.terms) {
+        conditions.push(
+          `(e.subject ILIKE $${p} OR e.body_text ILIKE $${p} OR e.body_html ILIKE $${p})`
+        );
+        params.push(`%${term}%`);
+        p++;
+      }
+
+      if (parsed.from) {
+        conditions.push(`e.sender_email ILIKE $${p}`);
+        params.push(`%${parsed.from}%`);
+        p++;
+      }
+
+      if (parsed.subject) {
+        conditions.push(`e.subject ILIKE $${p}`);
+        params.push(`%${parsed.subject}%`);
+        p++;
+      }
+
+      if (parsed.hasAttachment) {
+        conditions.push('jsonb_array_length(e.attachments) > 0');
+      }
+
+      const whereClause = conditions.join(' AND ');
+
+      const countResult = await db.query<{ count: string }>(
+        `SELECT COUNT(*) as count FROM emails e WHERE ${whereClause}`,
+        params
+      );
+      const total = parseInt(countResult.rows[0]?.count || '0');
+
+      const emailsResult = await db.query<{
+        id: string;
+        sender_email: string;
+        subject: string | null;
+        received_at: Date;
+        address: string;
+        read: boolean;
+      }>(
+        `SELECT e.id, e.sender_email, e.subject, e.received_at, ba.address, e.read
+         FROM emails e
+         JOIN blockchain_addresses ba ON e.recipient_address_id = ba.id
+         WHERE ${whereClause}
+         ORDER BY e.received_at DESC
+         LIMIT $${p} OFFSET $${p + 1}`,
+        [...params, limit, offset]
+      );
+
+      return {
+        success: true,
+        data: {
+          emails: emailsResult.rows.map((row) => ({
+            id: row.id,
+            from: row.sender_email,
+            subject: row.subject,
+            receivedAt: row.received_at,
+            sourceAddress: row.address,
+            read: row.read,
+          })),
+          total,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
    * Get a single received email by ID for a user
    * Checks all linked addresses to ensure the user owns the email
    *
@@ -394,6 +509,9 @@ export class AddressLinkingService {
     bodyHtml: string | null;
     receivedAt: Date;
     read: boolean;
+    isEncrypted: boolean;
+    encryptionMetadata: Record<string, unknown> | null;
+    attachments: Array<{ filename: string; contentType: string; size: number; url?: string }>;
   }>> {
     try {
       // Get all user's address IDs (primary + linked)
@@ -429,8 +547,12 @@ export class AddressLinkingService {
         received_at: Date;
         read: boolean;
         address: string;
+        is_encrypted: boolean;
+        encryption_metadata: Record<string, unknown> | null;
+        attachments: Array<{ filename: string; contentType: string; size: number; url?: string }> | null;
       }>(
-        `SELECT e.id, e.sender_email, e.subject, e.body_text, e.body_html, e.received_at, e.read, ba.address
+        `SELECT e.id, e.sender_email, e.subject, e.body_text, e.body_html, e.received_at, e.read, ba.address,
+                e.is_encrypted, e.encryption_metadata, e.attachments
          FROM emails e
          JOIN blockchain_addresses ba ON e.recipient_address_id = ba.id
          WHERE e.id = $1 AND e.recipient_address_id = ANY($2)`,
@@ -465,6 +587,15 @@ export class AddressLinkingService {
           bodyHtml: row.body_html,
           receivedAt: row.received_at,
           read: true, // Return true since we just marked it
+          isEncrypted: row.is_encrypted ?? false,
+          encryptionMetadata: row.encryption_metadata ?? null,
+          // Strip attachment binary content; expose only metadata for previews.
+          attachments: (row.attachments ?? []).map((a) => ({
+            filename: a.filename,
+            contentType: a.contentType,
+            size: a.size,
+            ...(a.url ? { url: a.url } : {}),
+          })),
         },
       };
     } catch (error) {

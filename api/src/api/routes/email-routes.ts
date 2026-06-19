@@ -13,7 +13,7 @@
 
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { emailSenderService } from '../../services/email/index.js';
+import { emailSenderService, groupIntoThreads } from '../../services/email/index.js';
 import { addressLinkingService, userService } from '../../services/user/index.js';
 import { createLogger } from '../../services/logger/index.js';
 
@@ -377,6 +377,166 @@ router.get('/sent', async (req: Request, res: Response) => {
         code: 'INTERNAL_ERROR',
         message: 'An unexpected error occurred',
       },
+    });
+  }
+});
+
+/**
+ * Threads query schema
+ */
+const getThreadsSchema = z.object({
+  limit: z.coerce.number().min(1).max(200).default(100),
+  offset: z.coerce.number().min(0).default(0),
+  sourceAddress: z.string().optional(),
+});
+
+/**
+ * GET /emails/threads/:userId
+ * Get the user's mailbox grouped into conversation threads.
+ *
+ * Query params:
+ * - limit: number of emails to group (default 100, max 200)
+ * - offset: pagination offset
+ * - sourceAddress: optional filter by source address
+ */
+router.get('/threads/:userId', async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params['userId'] || '0', 10);
+    if (!userId || isNaN(userId)) {
+      res.status(400).json({
+        error: { code: 'VALIDATION_ERROR', message: 'Valid user ID is required' },
+      });
+      return;
+    }
+
+    const validation = getThreadsSchema.safeParse(req.query);
+    if (!validation.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid query parameters',
+          details: validation.error.issues,
+        },
+      });
+      return;
+    }
+
+    const { limit, offset, sourceAddress } = validation.data;
+    const result = await addressLinkingService.getUnifiedMailbox(userId, limit, offset, sourceAddress);
+
+    if (!result.success) {
+      const status = result.error?.includes('not found') ? 404 : 400;
+      res.status(status).json({
+        error: { code: 'FETCH_FAILED', message: result.error || 'Failed to fetch mailbox' },
+      });
+      return;
+    }
+
+    const threads = groupIntoThreads(
+      result.data!.emails.map((email) => ({
+        id: email.id,
+        subject: email.subject,
+        senderAddress: email.from,
+        receivedAt: new Date(email.receivedAt),
+        headers: {},
+      }))
+    );
+
+    log.info('Mailbox threads retrieved', { userId, threadCount: threads.length });
+    res.status(200).json({
+      threads: threads.map((thread) => ({
+        id: thread.id,
+        subject: thread.subject,
+        messageCount: thread.messageCount,
+        lastMessageAt: thread.lastMessageAt,
+        participants: thread.participants,
+        emails: thread.emails.map((e) => ({
+          id: e.id,
+          from: e.senderAddress,
+          subject: e.subject,
+          receivedAt: e.receivedAt,
+        })),
+      })),
+      total: result.data!.total,
+    });
+  } catch (error) {
+    log.error('Get threads error', { error });
+    res.status(500).json({
+      error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' },
+    });
+  }
+});
+
+/**
+ * Search mailbox query schema
+ */
+const searchMailboxSchema = z.object({
+  q: z.string().min(1, 'Search query is required').max(500, 'Query too long'),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  offset: z.coerce.number().min(0).default(0),
+});
+
+/**
+ * GET /emails/search/:userId
+ * Search a user's unified mailbox.
+ *
+ * Query params:
+ * - q: search query (supports from:, subject:, has:attachment, "quoted phrases")
+ * - limit: number (default 50, max 100)
+ * - offset: number (default 0)
+ */
+router.get('/search/:userId', async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params['userId'] || '0', 10);
+    if (!userId || isNaN(userId)) {
+      res.status(400).json({
+        error: { code: 'VALIDATION_ERROR', message: 'Valid user ID is required' },
+      });
+      return;
+    }
+
+    const validation = searchMailboxSchema.safeParse(req.query);
+    if (!validation.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid query parameters',
+          details: validation.error.issues,
+        },
+      });
+      return;
+    }
+
+    const { q, limit, offset } = validation.data;
+    const result = await addressLinkingService.searchMailbox(userId, q, limit, offset);
+
+    if (!result.success) {
+      const status = result.error?.includes('not found') ? 404 : 400;
+      res.status(status).json({
+        error: { code: 'SEARCH_FAILED', message: result.error || 'Search failed' },
+      });
+      return;
+    }
+
+    log.info('Mailbox search completed', { userId, query: q, results: result.data!.emails.length });
+    res.status(200).json({
+      emails: result.data!.emails.map((email) => ({
+        id: email.id,
+        from: email.from,
+        to: email.sourceAddress,
+        subject: email.subject,
+        receivedAt: email.receivedAt,
+        read: email.read,
+      })),
+      total: result.data!.total,
+      query: q,
+      limit,
+      offset,
+    });
+  } catch (error) {
+    log.error('Mailbox search error', { error });
+    res.status(500).json({
+      error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' },
     });
   }
 });

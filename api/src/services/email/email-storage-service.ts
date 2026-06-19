@@ -19,6 +19,7 @@ import {
 } from '../../database/email-queries.js';
 import { getBlockchainProvider } from '../blockchain/provider-factory.js';
 import { createLogger } from '../logger/index.js';
+import { metricsService } from '../metrics/metrics-service.js';
 
 const log = createLogger('EmailStorage');
 import {
@@ -199,6 +200,12 @@ export class EmailStorageService {
     // Store email with resolved address
     const email = await createEmail(data, address, blockchain);
 
+    // Record ingestion metrics.
+    metricsService.increment('emails_received_total', 1, { blockchain });
+    if (email.isEncrypted) {
+      metricsService.increment('emails_received_encrypted_total');
+    }
+
     // Trigger forwarding asynchronously (don't block email storage)
     forwardingExecutor
       .processIncomingEmail({
@@ -207,6 +214,7 @@ export class EmailStorageService {
         subject: data.subject || '',
         bodyText: data.bodyText,
         bodyHtml: data.bodyHtml,
+        hasAttachments: (data.attachments?.length ?? 0) > 0,
       })
       .catch((error) => {
         log.error('Failed to process forwarding rules', {

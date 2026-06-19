@@ -26,3 +26,12 @@ export {
   type BruteForceConfig,
   type LockoutStatus,
 } from './brute-force-protection.js';
+
+export {
+  SpamFilterService,
+  spamFilterService,
+  type SpamFilterInput,
+  type SpamFilterResult,
+  type SpamFilterOptions,
+  type SpamReason,
+} from './spam-filter-service.js';

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import Link from 'next/link';
 import type { Email } from '@/lib/api/emails';
 import styles from './EmailList.module.css';
@@ -13,6 +14,35 @@ interface Props {
 }
 
 export function EmailList({ emails, total, loading, onLoadMore, hasMore }: Props) {
+  const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
+
+  // Keyboard navigation: Up/Down to move between emails, Home/End to jump.
+  const handleItemKeyDown = (e: React.KeyboardEvent, index: number) => {
+    const items = itemRefs.current.filter(Boolean) as HTMLAnchorElement[];
+    if (items.length === 0) return;
+
+    let nextIndex: number | null = null;
+    switch (e.key) {
+      case 'ArrowDown':
+        nextIndex = Math.min(index + 1, items.length - 1);
+        break;
+      case 'ArrowUp':
+        nextIndex = Math.max(index - 1, 0);
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = items.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    e.preventDefault();
+    itemRefs.current[nextIndex]?.focus();
+  };
+
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     const now = new Date();
@@ -41,37 +71,51 @@ export function EmailList({ emails, total, loading, onLoadMore, hasMore }: Props
   
   if (emails.length === 0) {
     return (
-      <div className={styles.empty}>
-        <span className={styles.emptyIcon}>📭</span>
+      <div className={styles.empty} role="status">
+        <span className={styles.emptyIcon} aria-hidden="true">📭</span>
         <h3>No emails yet</h3>
         <p>Your inbox is empty. Emails sent to your wallet address will appear here.</p>
       </div>
     );
   }
-  
+
   return (
     <div className={styles.list}>
       <div className={styles.header}>
         <span>{total} email{total !== 1 ? 's' : ''}</span>
       </div>
-      
-      {emails.map((email) => (
-        <Link
-          key={email.id}
-          href={`/mailbox/${email.id}`}
-          className={`${styles.emailItem} ${!email.read ? styles.unread : ''}`}
-        >
-          <div className={styles.sender}>{email.from}</div>
-          <div className={styles.content}>
-            <span className={styles.subject}>{email.subject || '(No subject)'}</span>
-            <span className={styles.preview}>
-              {email.bodyText?.slice(0, 100) || ''}
-            </span>
-          </div>
-          <div className={styles.date}>{formatDate(email.receivedAt)}</div>
-        </Link>
-      ))}
-      
+
+      <ul className={styles.items} role="list" aria-label="Email messages">
+        {emails.map((email, index) => {
+          const label = `${!email.read ? 'Unread. ' : ''}From ${email.from}. Subject: ${
+            email.subject || 'No subject'
+          }. Received ${formatDate(email.receivedAt)}.`;
+          return (
+            <li key={email.id} role="listitem">
+              <Link
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
+                href={`/mailbox/${email.id}`}
+                className={`${styles.emailItem} ${!email.read ? styles.unread : ''}`}
+                aria-label={label}
+                onKeyDown={(e) => handleItemKeyDown(e, index)}
+              >
+                {!email.read && <span className="sr-only">Unread message. </span>}
+                <div className={styles.sender}>{email.from}</div>
+                <div className={styles.content}>
+                  <span className={styles.subject}>{email.subject || '(No subject)'}</span>
+                  <span className={styles.preview}>
+                    {email.bodyText?.slice(0, 100) || ''}
+                  </span>
+                </div>
+                <div className={styles.date}>{formatDate(email.receivedAt)}</div>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+
       {hasMore && (
         <button
           className={styles.loadMore}

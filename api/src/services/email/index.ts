@@ -68,3 +68,27 @@ export {
   type ParseRouteResult,
   type MultiRouteResult,
 } from './mailjet-parse-route-service.js';
+
+export {
+  normalizeSubject,
+  groupIntoThreads,
+  type ThreadableEmail,
+  type EmailThread,
+} from './threading.js';
+
+export {
+  EmailTemplateService,
+  emailTemplateService,
+  renderTemplate,
+  extractVariables,
+  type EmailTemplate,
+  type RenderResult,
+} from './template-service.js';
+
+export {
+  parseSearchQuery,
+  matchesQuery,
+  searchEmails,
+  type SearchableEmail,
+  type ParsedQuery,
+} from './search.js';

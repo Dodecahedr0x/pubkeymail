@@ -18,6 +18,7 @@
  */
 
 import { db } from '../../database/connection.js';
+import { metricsService } from '../metrics/metrics-service.js';
 
 /**
  * Cleanup result with detailed metrics
@@ -221,6 +222,15 @@ export class EmailCleanupService {
       result.success = result.errorCount === 0;
       result.duration = Date.now() - startTime;
 
+      // Record cleanup metrics (skip dry runs so dashboards reflect real work).
+      if (!dryRun) {
+        metricsService.increment('email_cleanup_runs_total');
+        metricsService.increment('email_cleanup_deleted_total', totalDeleted);
+        metricsService.gauge('email_cleanup_last_deleted', totalDeleted);
+        metricsService.gauge('email_cleanup_last_addresses_affected', affectedAddresses.size);
+        metricsService.observe('email_cleanup_duration_ms', result.duration);
+      }
+
       return result;
     } catch (error) {
       result.errorCount++;
@@ -230,6 +240,9 @@ export class EmailCleanupService {
         context: { error },
       });
       result.duration = Date.now() - startTime;
+      if (!dryRun) {
+        metricsService.increment('email_cleanup_errors_total');
+      }
       return result;
     }
   }

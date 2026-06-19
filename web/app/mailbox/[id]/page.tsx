@@ -6,6 +6,7 @@ import Link from 'next/link';
 import * as emailsApi from '@/lib/api/emails';
 import type { Email } from '@/lib/api/emails';
 import { ConfirmModal } from '@/components/ConfirmModal';
+import { AttachmentList } from '@/components/AttachmentList';
 import { useAuth } from '@/providers';
 import styles from './page.module.css';
 
@@ -134,8 +135,15 @@ export default function EmailDetailPage() {
       
       <div className={styles.emailContent}>
         <header className={styles.header}>
-          <h1 className={styles.subject}>{email.subject || '(No subject)'}</h1>
-          
+          <h1 className={styles.subject}>
+            {email.subject || '(No subject)'}
+            {email.isEncrypted && (
+              <span className={styles.encryptedBadge} title="End-to-end encrypted">
+                <span aria-hidden="true">🔒</span> Encrypted
+              </span>
+            )}
+          </h1>
+
           <div className={styles.meta}>
             <div className={styles.from}>
               <strong>From:</strong> {email.from}
@@ -150,8 +158,13 @@ export default function EmailDetailPage() {
         </header>
         
         <div className={styles.body}>
-          {email.bodyHtml ? (
-            <div 
+          {email.isEncrypted ? (
+            <div className={styles.encryptedNotice} role="note">
+              <span aria-hidden="true">🔒</span> This message is end-to-end encrypted.
+              Decrypt it with your wallet&apos;s private key to read the contents.
+            </div>
+          ) : email.bodyHtml ? (
+            <div
               className={styles.htmlContent}
               dangerouslySetInnerHTML={{ __html: email.bodyHtml }}
             />
@@ -159,6 +172,10 @@ export default function EmailDetailPage() {
             <pre className={styles.textContent}>{email.bodyText}</pre>
           )}
         </div>
+
+        {email.attachments && email.attachments.length > 0 && (
+          <AttachmentList attachments={email.attachments} />
+        )}
       </div>
 
       <ConfirmModal

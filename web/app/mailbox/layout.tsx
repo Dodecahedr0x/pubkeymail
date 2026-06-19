@@ -40,9 +40,12 @@ export default function MailboxLayout({
   
   return (
     <div className={styles.layout}>
+      <a href="#mailbox-content" className="skip-link">
+        Skip to content
+      </a>
       <MobileHeader isOpen={isSidebarOpen} onToggle={toggleSidebar} />
       <Sidebar isOpen={isSidebarOpen} onClose={closeSidebar} />
-      <main className={styles.content}>
+      <main id="mailbox-content" className={styles.content} tabIndex={-1}>
         {children}
       </main>
     </div>

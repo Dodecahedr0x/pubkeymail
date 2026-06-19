@@ -14,12 +14,26 @@ import crypto from 'crypto';
 
 /**
  * Filter conditions for forwarding rules
+ *
+ * Inclusion filters (fromContains / subjectContains / bodyContains) combine
+ * with OR semantics by default — an email matches if it satisfies ANY of them.
+ * Set `matchAll: true` to require ALL specified inclusion filters (AND).
+ *
+ * Exclusion filters always take precedence: a matching exclusion drops the
+ * email regardless of inclusions.
  */
 export interface FilterConditions {
   fromContains?: string[];
   subjectContains?: string[];
+  /** Match against the email body (text, falling back to stripped HTML). */
+  bodyContains?: string[];
   excludeFrom?: string[];
   excludeSubject?: string[];
+  excludeBody?: string[];
+  /** Only forward emails that have / don't have attachments. */
+  hasAttachment?: boolean;
+  /** Require ALL inclusion filters to match instead of ANY (default false). */
+  matchAll?: boolean;
 }
 
 /**
@@ -72,6 +86,9 @@ export interface ForwardingRuleResult {
 export interface EmailForFiltering {
   from: string;
   subject: string;
+  bodyText?: string | null;
+  bodyHtml?: string | null;
+  hasAttachments?: boolean;
 }
 
 /**
@@ -358,51 +375,46 @@ export class ForwardingService {
 
     const fromLower = email.from.toLowerCase();
     const subjectLower = email.subject.toLowerCase();
+    const bodyLower = (
+      email.bodyText ?? (email.bodyHtml ?? '').replace(/<[^>]*>/g, ' ')
+    ).toLowerCase();
 
-    // Check exclusions first
-    if (conditions.excludeFrom?.length) {
-      for (const pattern of conditions.excludeFrom) {
-        if (fromLower.includes(pattern.toLowerCase())) {
-          return false;
-        }
+    const anyMatch = (haystack: string, patterns?: string[]): boolean =>
+      !!patterns?.some((p) => haystack.includes(p.toLowerCase()));
+
+    // Check exclusions first — any match drops the email.
+    if (anyMatch(fromLower, conditions.excludeFrom)) return false;
+    if (anyMatch(subjectLower, conditions.excludeSubject)) return false;
+    if (anyMatch(bodyLower, conditions.excludeBody)) return false;
+
+    // Attachment presence filter.
+    if (conditions.hasAttachment !== undefined) {
+      if (!!email.hasAttachments !== conditions.hasAttachment) {
+        return false;
       }
     }
 
-    if (conditions.excludeSubject?.length) {
-      for (const pattern of conditions.excludeSubject) {
-        if (subjectLower.includes(pattern.toLowerCase())) {
-          return false;
-        }
-      }
-    }
-
-    // Check inclusion filters (if specified, at least one must match)
-    let hasInclusionFilters = false;
-    let matchesInclusion = false;
-
+    // Collect inclusion filter results (only for those that are specified).
+    const inclusionResults: boolean[] = [];
     if (conditions.fromContains?.length) {
-      hasInclusionFilters = true;
-      for (const pattern of conditions.fromContains) {
-        if (fromLower.includes(pattern.toLowerCase())) {
-          matchesInclusion = true;
-          break;
-        }
-      }
+      inclusionResults.push(anyMatch(fromLower, conditions.fromContains));
     }
-
     if (conditions.subjectContains?.length) {
-      hasInclusionFilters = true;
-      for (const pattern of conditions.subjectContains) {
-        if (subjectLower.includes(pattern.toLowerCase())) {
-          matchesInclusion = true;
-          break;
-        }
-      }
+      inclusionResults.push(anyMatch(subjectLower, conditions.subjectContains));
+    }
+    if (conditions.bodyContains?.length) {
+      inclusionResults.push(anyMatch(bodyLower, conditions.bodyContains));
     }
 
-    // If no inclusion filters, match all (that passed exclusions)
-    // If inclusion filters exist, must match at least one
-    return !hasInclusionFilters || matchesInclusion;
+    // No inclusion filters → match all that passed exclusions/attachment check.
+    if (inclusionResults.length === 0) {
+      return true;
+    }
+
+    // matchAll → every inclusion filter must match (AND); otherwise ANY (OR).
+    return conditions.matchAll
+      ? inclusionResults.every(Boolean)
+      : inclusionResults.some(Boolean);
   }
 
   /**

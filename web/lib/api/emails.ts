@@ -1,5 +1,12 @@
 import { apiRequest } from './client';
 
+export interface EmailAttachmentMeta {
+  filename: string;
+  contentType: string;
+  size: number;
+  url?: string;
+}
+
 export interface Email {
   id: string;
   from: string;
@@ -9,6 +16,9 @@ export interface Email {
   bodyHtml?: string;
   receivedAt: string;
   read: boolean;
+  isEncrypted?: boolean;
+  encryptionMetadata?: Record<string, unknown> | null;
+  attachments?: EmailAttachmentMeta[];
 }
 
 export interface SentEmail {

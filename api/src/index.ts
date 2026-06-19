@@ -29,12 +29,13 @@ async function startServer(): Promise<void> {
   }
 
   // Start HTTP server
-  const server = app.listen(port, () => {
+  const server = app.listen(port, '0.0.0.0', () => {
     const modeInfo = isLocalDevMode
       ? '🧪 LOCAL DEV (in-memory)'
       : config.NODE_ENV;
     log.info('Server started', {
       port,
+      host: '0.0.0.0',
       mode: modeInfo,
       api: `http://localhost:${port}/api/${config.API_VERSION}`,
       health: `http://localhost:${port}/health`,

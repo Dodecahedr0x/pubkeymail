@@ -15,6 +15,16 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.items li:last-child .emailItem {
+  border-bottom: none;
+}
+
 .emailItem {
   display: grid;
   grid-template-columns: 180px 1fr 80px;

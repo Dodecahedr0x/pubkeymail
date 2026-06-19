@@ -126,7 +126,13 @@ describe('ForwardingExecutor', () => {
       expect(result.failed).toBe(0);
       expect(result.details).toHaveLength(0);
       expect(mockMatchesFilter).toHaveBeenCalledWith(
-        { from: email.from, subject: email.subject },
+        {
+          from: email.from,
+          subject: email.subject,
+          bodyText: email.bodyText,
+          bodyHtml: email.bodyHtml,
+          hasAttachments: email.hasAttachments,
+        },
         rule.filterConditions
       );
     });

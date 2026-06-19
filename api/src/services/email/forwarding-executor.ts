@@ -18,6 +18,7 @@ export interface IncomingEmailData {
   subject: string;
   bodyText?: string;
   bodyHtml?: string;
+  hasAttachments?: boolean;
 }
 
 /**
@@ -61,7 +62,13 @@ export class ForwardingExecutor {
 
     for (const rule of activeRules) {
       const matches = forwardingService.matchesFilter(
-        { from: email.from, subject: email.subject },
+        {
+          from: email.from,
+          subject: email.subject,
+          bodyText: email.bodyText,
+          bodyHtml: email.bodyHtml,
+          hasAttachments: email.hasAttachments,
+        },
         rule.filterConditions
       );
 

@@ -24,8 +24,12 @@ const router: Router = Router();
 const filterConditionsSchema = z.object({
   fromContains: z.array(z.string()).optional(),
   subjectContains: z.array(z.string()).optional(),
+  bodyContains: z.array(z.string()).optional(),
   excludeFrom: z.array(z.string()).optional(),
   excludeSubject: z.array(z.string()).optional(),
+  excludeBody: z.array(z.string()).optional(),
+  hasAttachment: z.boolean().optional(),
+  matchAll: z.boolean().optional(),
 }).optional();
 
 /**

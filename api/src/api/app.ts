@@ -18,6 +18,9 @@ import emailRoutes from './routes/email-routes.js';
 import forwardingRoutes from './routes/forwarding-routes.js';
 import complianceRoutes from './routes/compliance-routes.js';
 import encryptionRoutes from './routes/encryption-routes.js';
+import templateRoutes from './routes/template-routes.js';
+import metricsRoutes from './routes/metrics-routes.js';
+import { metricsMiddleware } from './middleware/metrics-middleware.js';
 
 const log = createLogger('API');
 
@@ -74,6 +77,9 @@ export function createApp(): Application {
     next();
   });
 
+  // Per-request metrics collection
+  app.use(metricsMiddleware);
+
   // API Routes
   const apiPrefix = `/api/${config.API_VERSION}`;
 
@@ -85,9 +91,13 @@ export function createApp(): Application {
   app.use(`${apiPrefix}/forwarding`, forwardingRoutes);
   app.use(`${apiPrefix}/compliance`, complianceRoutes);
   app.use(`${apiPrefix}/encryption`, encryptionRoutes);
+  app.use(`${apiPrefix}/templates`, templateRoutes);
 
   // Health routes at root level (no API prefix for k8s probes)
   app.use('/health', healthRoutes);
+
+  // Metrics endpoint at root level (for Prometheus scraping)
+  app.use('/metrics', metricsRoutes);
 
   // Root endpoint
   app.get('/', (_req: Request, res: Response) => {

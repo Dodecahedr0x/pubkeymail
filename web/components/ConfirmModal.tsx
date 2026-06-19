@@ -27,12 +27,33 @@ export function ConfirmModal({
   onCancel,
 }: Props) {
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !loading) {
         onCancel();
+        return;
+      }
+
+      // Focus trap: keep Tab focus cycling within the modal.
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+
+        if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     },
     [loading, onCancel]
@@ -74,7 +95,7 @@ export function ConfirmModal({
       aria-labelledby="confirm-modal-title"
       aria-describedby="confirm-modal-message"
     >
-      <div className={styles.modal}>
+      <div className={styles.modal} ref={modalRef}>
         <h2 id="confirm-modal-title" className={styles.title}>
           {title}
         </h2>

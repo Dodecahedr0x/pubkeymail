@@ -10,6 +10,7 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { encryptionService } from '../../services/encryption/encryption-service.js';
+import { emailEncryptionService } from '../../services/encryption/email-encryption-service.js';
 import { userService } from '../../services/user/index.js';
 import {
   authMiddleware,
@@ -177,6 +178,164 @@ router.get('/keys/:address', async (req: Request, res: Response) => {
       error: {
         code: 'INTERNAL_ERROR',
         message: 'Failed to retrieve encryption key',
+      },
+    });
+  }
+});
+
+/**
+ * Encrypt email content for storage.
+ *
+ * Provide either a `recipientPublicKey` directly, or a `recipientAddress`
+ * whose published key will be looked up.
+ */
+const encryptSchema = z
+  .object({
+    recipientPublicKey: z
+      .string()
+      .length(64)
+      .regex(/^[0-9a-fA-F]+$/)
+      .optional(),
+    recipientAddress: z.string().optional(),
+    subject: z.string().optional(),
+    bodyText: z.string().optional(),
+    bodyHtml: z.string().optional(),
+    senderPublicKey: z.string().optional(),
+  })
+  .refine((d) => d.recipientPublicKey || d.recipientAddress, {
+    message: 'Either recipientPublicKey or recipientAddress is required',
+  })
+  .refine((d) => d.subject || d.bodyText || d.bodyHtml, {
+    message: 'At least one of subject, bodyText, or bodyHtml is required',
+  });
+
+/**
+ * POST /encryption/encrypt
+ * Encrypt email content to a recipient's public key for E2E storage.
+ *
+ * Response:
+ * {
+ *   "isEncrypted": true,
+ *   "ciphertext": "...",
+ *   "encryptionMetadata": { ... }
+ * }
+ */
+router.post('/encrypt', async (req: Request, res: Response) => {
+  try {
+    const validation = encryptSchema.safeParse(req.body);
+    if (!validation.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request body',
+          details: validation.error.issues,
+        },
+      });
+      return;
+    }
+
+    const { recipientPublicKey, recipientAddress, subject, bodyText, bodyHtml, senderPublicKey } =
+      validation.data;
+
+    let publicKey = recipientPublicKey;
+    if (!publicKey && recipientAddress) {
+      const resolved = await encryptionService.getPublicKeyByAddress(recipientAddress);
+      if (!resolved) {
+        res.status(404).json({
+          error: {
+            code: 'NOT_FOUND',
+            message: 'No encryption key found for recipient address',
+          },
+        });
+        return;
+      }
+      publicKey = resolved;
+    }
+
+    const envelope = await emailEncryptionService.encryptForStorage(
+      { subject, bodyText, bodyHtml },
+      publicKey!,
+      senderPublicKey
+    );
+
+    log.info('Email content encrypted', { recipientAddress });
+    res.status(200).json(envelope);
+  } catch (error) {
+    log.error('Encrypt content error', { error });
+    res.status(400).json({
+      error: {
+        code: 'ENCRYPTION_FAILED',
+        message: error instanceof Error ? error.message : 'Failed to encrypt content',
+      },
+    });
+  }
+});
+
+/**
+ * Decrypt a stored encrypted email envelope.
+ *
+ * The recipient private key is used transiently and never persisted.
+ */
+const decryptSchema = z.object({
+  ciphertext: z.string().min(1, 'Ciphertext is required'),
+  encryptionMetadata: z.object({
+    algorithm: z.string(),
+    version: z.number(),
+    encryptedAt: z.string().optional(),
+    nonce: z.string(),
+    ephemeralPublicKey: z.string(),
+    senderPublicKey: z.string().optional(),
+  }),
+  privateKey: z
+    .string()
+    .length(64, 'Private key must be 64 hex characters')
+    .regex(/^[0-9a-fA-F]+$/, 'Private key must be valid hex'),
+});
+
+/**
+ * POST /encryption/decrypt
+ * Decrypt an encrypted email on retrieval using the recipient's private key.
+ *
+ * Response:
+ * {
+ *   "subject": "...",
+ *   "bodyText": "...",
+ *   "bodyHtml": "..."
+ * }
+ */
+router.post('/decrypt', async (req: Request, res: Response) => {
+  try {
+    const validation = decryptSchema.safeParse(req.body);
+    if (!validation.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Invalid request body',
+          details: validation.error.issues,
+        },
+      });
+      return;
+    }
+
+    const { ciphertext, encryptionMetadata, privateKey } = validation.data;
+
+    const content = await emailEncryptionService.decryptOnRetrieval(
+      {
+        ciphertext,
+        encryptionMetadata: encryptionMetadata as never,
+      },
+      privateKey
+    );
+
+    res.status(200).json(content);
+  } catch (error) {
+    log.warn('Decrypt content failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.status(400).json({
+      error: {
+        code: 'DECRYPTION_FAILED',
+        message: 'Failed to decrypt content - invalid key or corrupted data',
       },
     });
   }
