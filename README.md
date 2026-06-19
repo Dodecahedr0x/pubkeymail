@@ -231,6 +231,13 @@ pubkeymail/
 - [Technical Architecture](specs/technical-architecture.md)
 - [API Specification](specs/api-specification.md)
 - [Cleanup Service](docs/cleanup-service.md)
+- [Render Deployment](docs/render-deployment.md)
+
+## Deployment
+
+Deployment is managed with the root [`render.yaml`](render.yaml) Blueprint. It provisions the API, web app, PostgreSQL, and Redis-compatible key-value store on Render.
+
+See [Render Deployment](docs/render-deployment.md) for the required Dashboard secrets and post-deploy checks.
 
 ## User Tiers
 

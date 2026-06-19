@@ -1,0 +1,163 @@
+services:
+  - type: web
+    name: pubkeymail-api
+    runtime: node
+    plan: free
+    region: oregon
+    repo: https://github.com/Dodecahedr0x/pubkeymail
+    branch: master
+    autoDeploy: true
+    buildCommand: npm ci && npm run build:api
+    startCommand: npm run migrate && npm run start
+    healthCheckPath: /health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: API_VERSION
+        value: v1
+      - key: USE_LOCAL_DEV
+        value: "false"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pubkeymail-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromDatabase:
+          name: pubkeymail-redis
+          property: connectionString
+      - key: DATABASE_POOL_SIZE
+        value: "20"
+      - key: DATABASE_POOL_IDLE_TIMEOUT
+        value: "30000"
+      - key: DATABASE_CONNECTION_TIMEOUT
+        value: "10000"
+      - key: REDIS_KEY_PREFIX
+        value: "pubkeymail:"
+      - key: REDIS_DEFAULT_TTL
+        value: "3600"
+      - key: EMAIL_RETENTION_DAYS
+        value: "30"
+      - key: CLEANUP_JOB_HOUR
+        value: "2"
+      - key: SMTP_PROVIDER
+        value: mailjet
+      - key: SMTP_WEBHOOK_PATH
+        value: /webhooks/inbound
+      - key: SOLANA_RPC_ENDPOINT
+        value: https://api.devnet.solana.com
+      - key: SOLANA_CLUSTER
+        value: devnet
+      - key: SNS_PROGRAM_ID
+        value: namesLPneVptA9Z5rqUDD9tMTWEJwofgaYwp8cawRkX
+      - key: SNS_CACHE_TTL
+        value: "3600"
+      - key: ETHEREUM_CHAIN_ID
+        value: "1"
+      - key: ENS_CACHE_TTL
+        value: "3600"
+      - key: JWT_EXPIRATION
+        value: "86400"
+      - key: SESSION_DURATION
+        value: "86400"
+      - key: AUTH_NONCE_EXPIRATION
+        value: "300"
+      - key: RATE_LIMIT_WINDOW_MS
+        value: "3600000"
+      - key: RATE_LIMIT_MAX_REQUESTS_PER_HOUR
+        value: "1000"
+      - key: RATE_LIMIT_AUTH_PER_MINUTE
+        value: "10"
+      - key: RATE_LIMIT_EMAIL_SEND_FREE_TIER
+        value: "50"
+      - key: RATE_LIMIT_EMAIL_SEND_PAID_TIER
+        value: "500"
+      - key: SUBSCRIPTION_GRACE_PERIOD_DAYS
+        value: "7"
+      - key: MAX_EMAIL_SIZE_MB
+        value: "25"
+      - key: MAX_ATTACHMENT_SIZE_MB
+        value: "10"
+      - key: MAX_ATTACHMENTS_PER_EMAIL
+        value: "10"
+      - key: SOLANA_PAY_USDC_MINT
+        value: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+      - key: LOG_LEVEL
+        value: info
+      - key: LOG_PRETTY_PRINT
+        value: "false"
+      - key: HELMET_CSP_ENABLED
+        value: "true"
+      - key: ENABLE_METRICS
+        value: "false"
+      - key: METRICS_PORT
+        value: "9090"
+      - key: SENTRY_ENVIRONMENT
+        value: production
+      - key: ENABLE_EMAIL_ENCRYPTION
+        value: "true"
+      - key: ENABLE_FORWARDING_FILTERS
+        value: "true"
+      - key: ENABLE_SPAM_FILTERING
+        value: "false"
+      - key: ENABLE_DEBUG_ROUTES
+        value: "false"
+      - key: MOCK_SMTP_PROVIDER
+        value: "false"
+      - key: MOCK_BLOCKCHAIN_PROVIDER
+        value: "false"
+      - key: DOMAIN
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: SMTP_API_KEY
+        sync: false
+      - key: SMTP_WEBHOOK_SECRET
+        sync: false
+      - key: SMTP_FROM_DOMAIN
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SOLANA_PAY_MERCHANT_WALLET
+        sync: false
+      - key: ETHEREUM_RPC_ENDPOINT
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+
+  - type: web
+    name: pubkeymail-web
+    runtime: node
+    plan: free
+    region: oregon
+    repo: https://github.com/Dodecahedr0x/pubkeymail
+    branch: master
+    autoDeploy: true
+    buildCommand: npm ci && npm run build:web
+    startCommand: npm --prefix web run start -- --hostname 0.0.0.0
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "10000"
+      - key: NEXT_PUBLIC_SOLANA_NETWORK
+        value: devnet
+      - key: NEXT_PUBLIC_SOLANA_RPC
+        value: https://api.devnet.solana.com
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+
+databases:
+  - name: pubkeymail-postgres
+    databaseName: pubkeymail
+    user: pubkeymail_user
+    plan: free
+    postgresMajorVersion: "16"
+    ipAllowList: []
+
+  - name: pubkeymail-redis
+    plan: free
+    ipAllowList: []

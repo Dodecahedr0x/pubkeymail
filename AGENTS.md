@@ -80,6 +80,20 @@ cargo watch -x run
 # Access API at: http://localhost:3000 (or configured port)
 ```
 
+## Deployment
+```bash
+# Validate the Render Blueprint when the Render CLI is available
+render blueprints validate
+```
+
+Deployment is managed by the root `render.yaml` Render Blueprint. It replaces the old Railway/Nixpacks deployment path and provisions:
+- `pubkeymail-api` - Express API service
+- `pubkeymail-web` - Next.js web service
+- `pubkeymail-postgres` - PostgreSQL database
+- `pubkeymail-redis` - Redis-compatible key-value store
+
+The API service runs `npm run migrate && npm run start` and must bind to `0.0.0.0:$PORT`. The web service requires `NEXT_PUBLIC_API_URL=https://<api-host>/api/v1` before build.
+
 ## Database Management
 ```bash
 # Run migrations
@@ -162,6 +176,9 @@ npm run test
 
 ## Key Learnings
 ### Critical Implementation Notes
+- **Render Deployment**: Use `render.yaml` for production deployment
+  - Do not reintroduce Railway or Nixpacks config unless explicitly requested
+  - Keep required Render Dashboard secrets synchronized with `docs/render-deployment.md`
 - **Case Sensitivity**: PostgreSQL database MUST use case-sensitive collation for address columns
   - Use `COLLATE "C"` or `COLLATE "POSIX"` in table definitions
   - Test case sensitivity thoroughly in all queries

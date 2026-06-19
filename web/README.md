@@ -35,8 +35,14 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy on Render
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The production web app is deployed through the root Render Blueprint at `../render.yaml`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set `NEXT_PUBLIC_API_URL` to the deployed API base URL before building, for example:
+
+```env
+NEXT_PUBLIC_API_URL=https://<api-host>/api/v1
+```
+
+See [Render Deployment](../docs/render-deployment.md) for the full deployment flow.

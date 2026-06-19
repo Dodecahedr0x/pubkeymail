@@ -156,7 +156,7 @@
 ### Security Hardening
 - [x] Implement rate limiting per address (Redis-based sliding window)
 - [x] Add email size and attachment limits (middleware)
-- [ ] Setup spam filtering integration (external service integration pending)
+- [x] Setup spam filtering integration (SpamFilterService: heuristic scoring + allow/blocklist, 15 tests)
 - [ ] Implement CAPTCHA for sending (frontend integration pending)
 - [x] Add brute force protection (Redis-based lockout)
 - [x] Create security audit logging (PostgreSQL-based)
@@ -214,13 +214,13 @@
 - [ ] Document blockchain extension guide
 
 ### Additional Features
-- [ ] Email threading and conversations
+- [x] Email threading and conversations (threading service + GET /emails/threads/:userId, 13 tests)
 - [ ] Advanced forwarding filters
-- [ ] Spam blocking and allowlists
+- [x] Spam blocking and allowlists (SpamFilterService: heuristic scoring + allow/blocklist, 15 tests)
 - [ ] Mobile app API support
-- [ ] Email templates
+- [x] Email templates (EmailTemplateService + /templates routes, {{var}} render, 11 tests)
 - [ ] Attachment preview
-- [ ] Search functionality
+- [x] Search functionality (search parser/matcher + GET /emails/search/:userId, 16 tests)
 
 ## Phase 11: Web Application & UI (Medium Priority)
 
@@ -281,6 +281,14 @@
 - [x] Dark mode support (built-in dark theme)
 
 ## Recent Completions (This Session)
+- ✅ Phase 10 Additional Features batch: email threading, spam filtering/allowlists, email templates, mailbox search
+  - SpamFilterService (heuristics + allow/blocklist wildcards) — 15 tests
+  - Email threading (Message-ID/References + subject clustering) + GET /emails/threads/:userId — 13 tests
+  - EmailTemplateService ({{var}} render, HTML-escaping) + /templates CRUD/render routes — 11 tests
+  - Mailbox search query language (from:/subject:/has:attachment/"phrases") + GET /emails/search/:userId — 16 tests
+  - Total tests: 583 passing (up from 528)
+- ✅ Replaced Railway/Nixpacks deployment with Render Blueprint (`render.yaml`)
+- ✅ Added Render deployment documentation and Dashboard environment variable checklist
 - ✅ Phase 8: Email Encryption Service (X25519, 30 tests)
 - ✅ Phase 9: Pool monitoring, Bull queue, SNS caching
 - ✅ Phase 10: Ethereum provider with ENS support
