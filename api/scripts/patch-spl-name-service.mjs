@@ -1,10 +1,41 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const packagePath = path.resolve(
-  process.cwd(),
-  'node_modules/@solana/spl-name-service/package.json'
+const PACKAGE_NAME = '@solana/spl-name-service';
+
+const findPackageRoot = async (startDir) => {
+  let dir = startDir;
+
+  while (true) {
+    const candidate = path.join(dir, 'node_modules', PACKAGE_NAME);
+    try {
+      await fs.access(path.join(candidate, 'package.json'));
+      return candidate;
+    } catch (error) {
+      if (error?.code !== 'ENOENT') {
+        throw error;
+      }
+    }
+
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      return null;
+    }
+
+    dir = parent;
+  }
+};
+
+const packageRoot = await findPackageRoot(
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 );
+
+if (!packageRoot) {
+  process.exit(0);
+}
+
+const packagePath = path.join(packageRoot, 'package.json');
 
 const ensureRelativeExport = (value) => {
   if (typeof value !== 'string') {
@@ -37,10 +68,7 @@ const normalizeExports = (exportsField) => {
 };
 
 const patchEsmBindings = async () => {
-  const esmDir = path.resolve(
-    process.cwd(),
-    'node_modules/@solana/spl-name-service/lib/esm'
-  );
+  const esmDir = path.join(packageRoot, 'lib/esm');
 
   try {
     const entries = await fs.readdir(esmDir, { withFileTypes: true });
